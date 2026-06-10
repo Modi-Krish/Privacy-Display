@@ -1,0 +1,157 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 28px 32px;
+  gap: 24px;
+}
+
+.header { display: flex; flex-direction: column; gap: 6px; }
+.header h1 { font-size: 1.5rem; }
+.header p  { font-size: 0.875rem; }
+
+.indexingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--accent-light);
+  border: 1px solid rgba(124,106,247,0.3);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--accent);
+  width: fit-content;
+}
+
+.spin { animation: spin 1s linear infinite; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.fullWidth { grid-column: 1 / -1; }
+
+.section { display: flex; flex-direction: column; gap: 16px; }
+
+.sectionHead { display: flex; align-items: center; justify-content: space-between; }
+
+.count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* Resume */
+.resumeCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.resumeInfo { display: flex; align-items: center; gap: 12px; }
+
+.resumeName { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+.resumeMeta { font-size: 0.78rem; color: var(--text-muted); }
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.dropzone:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.dropzoneHint { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Skills */
+.addSkillForm { display: flex; gap: 8px; }
+
+.skillCloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.skillTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px 4px 12px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+.skillTag:hover { border-color: var(--accent); }
+
+.skillDel {
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-muted); padding: 2px; border-radius: 50%;
+  transition: all 0.15s;
+}
+.skillDel:hover { background: var(--danger); color: #fff; }
+
+.emptyHint { font-size: 0.82rem; color: var(--text-muted); }
+
+/* Projects */
+.projForm {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.projectList { display: flex; flex-direction: column; gap: 10px; }
+
+.projectCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  gap: 12px;
+  transition: border-color 0.15s;
+}
+.projectCard:hover { border-color: var(--border); }
+
+.projInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.projTitle { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.projDesc  { font-size: 0.82rem; color: var(--text-secondary); }
+.projTech  {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  background: var(--accent-light);
+  border-radius: 4px;
+  padding: 2px 8px;
+  width: fit-content;
+}

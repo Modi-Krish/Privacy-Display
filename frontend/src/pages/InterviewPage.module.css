@@ -1,0 +1,199 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sessionLabel { font-size: 0.85rem; font-weight: 600; color: var(--danger); }
+.timer { font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-secondary); }
+.questionCount { font-size: 0.8rem; color: var(--text-muted); }
+
+.body {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.leftCol {
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+}
+
+.rightCol {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dividerLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.dividerLabel::before,
+.dividerLabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.textForm { display: flex; flex-direction: column; gap: 8px; }
+
+.sectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.historyList { display: flex; flex-direction: column; gap: 6px; }
+
+.historyItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.historyText {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex: 1;
+}
+
+/* Pre-session */
+.preSession {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+}
+
+.preCard {
+  max-width: 480px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.preIcon {
+  width: 64px; height: 64px;
+  background: var(--accent-light);
+  border: 1px solid rgba(124,106,247,0.3);
+  border-radius: var(--radius-xl);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+}
+
+.noResumeWarning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(210,153,34,0.1);
+  border: 1px solid rgba(210,153,34,0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--warning);
+}
+.noResumeWarning a { color: var(--warning); }
+
+/* Processing */
+.processingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 24px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Answer card */
+.answerCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.questionSection { margin-bottom: 0; }
+.questionText { font-size: 1.05rem; font-weight: 500; color: var(--text-primary); line-height: 1.5; }
+
+.answerSection {}
+
+.answerText {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.latency { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+.contextToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+.contextToggle:hover { background: var(--bg-hover); color: var(--text-primary); }
+.contextToggle > *:last-child { margin-left: auto; }
+
+/* Empty */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

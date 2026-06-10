@@ -1,0 +1,83 @@
+# ── Environment Secrets & Configs ─────────────────────────────────────────────
+.env
+.env.*
+*.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# ── Certificates, Secrets & Cloud Credentials ──────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+credentials.json
+service-account.json
+firebase-adminsdk.json
+google-credentials.json
+
+# ── Logs & Debugs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Dependency Directories ────────────────────────────────────────────────────
+node_modules/
+vendor/
+__pycache__/
+venv/
+.venv/
+env/
+
+# ── Build & Dist Output ────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+coverage/
+frontend/dist/
+frontend/dist-electron/
+frontend/release/
+
+# ── IDE & Editor Settings ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.suo
+
+# ── Operating System Files ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Docker Runtime & Temp Files ───────────────────────────────────────────────
+docker-data/
+tmp/
+cache/
+data/
+backend/data/
+
+# ── Testing Artifacts ─────────────────────────────────────────────────────────
+.pytest_cache/
+coverage.xml
+htmlcov/
+.coverage
+
+# ── AI / ML Models & Local Index Cache ────────────────────────────────────────
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.onnx
+*.index
+*.meta.json
+faiss_indices/
