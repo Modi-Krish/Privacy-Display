@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react'
-import { Mic, Square, AlertTriangle, Monitor } from 'lucide-react'
 import { useInterviewStore } from '@/store/interviewStore'
 import toast from 'react-hot-toast'
 import styles from './AudioRecorder.module.css'
@@ -23,7 +22,7 @@ type AudioSource = 'mic' | 'screen'
 export default function AudioRecorder() {
   const { recordingState, setRecordingState, submitAudio, isSessionActive } = useInterviewStore()
   const [micError, setMicError]     = useState<string | null>(null)
-  const [audioSource, setAudioSource] = useState<AudioSource>('mic')
+  const [activeSource, setActiveSource] = useState<AudioSource | null>(null)
   const mediaRef   = useRef<MediaRecorder | null>(null)
   const chunksRef  = useRef<Blob[]>([])
   const streamRef  = useRef<MediaStream | null>(null)
@@ -32,14 +31,13 @@ export default function AudioRecorder() {
   const isRecording  = recordingState === 'recording'
   const isProcessing = recordingState === 'processing'
 
-  const getStream = async (): Promise<MediaStream> => {
-    if (audioSource === 'mic') {
+  const getStream = async (source: AudioSource): Promise<MediaStream> => {
+    if (source === 'mic') {
       return navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     }
 
-    // Screen share — capture system audio from the shared tab/screen
     const displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,          // required by spec, we keep it alive for lifecycle tracking
+      video: true,
       audio: {
         echoCancellation: false,
         noiseSuppression: false,
@@ -47,28 +45,25 @@ export default function AudioRecorder() {
       },
     })
 
-    // Check if audio track was granted (user must tick "Share audio")
     const audioTracks = displayStream.getAudioTracks()
     if (audioTracks.length === 0) {
-      // Stop video tracks since we don't need them
       displayStream.getVideoTracks().forEach((t) => t.stop())
       throw new Error('NO_AUDIO')
     }
 
-    // Hold reference to video track for stop events
     const videoTrack = displayStream.getVideoTracks()[0]
     if (videoTrack) {
       videoTrackRef.current = videoTrack
     }
 
-    // Return audio-only stream (discard video from recording stream)
     return new MediaStream(audioTracks)
   }
 
-  const startRecording = async () => {
+  const startRecording = async (source: AudioSource) => {
     setMicError(null)
+    setActiveSource(source)
     try {
-      const stream = await getStream()
+      const stream = await getStream(source)
       streamRef.current = stream
       const mimeType = getSupportedMime()
       if (!mimeType) throw new Error('No supported audio format')
@@ -86,9 +81,9 @@ export default function AudioRecorder() {
           videoTrackRef.current = null
         }
         await submitAudio(blob)
+        setActiveSource(null)
       }
 
-      // If the user stops the screen share from the browser UI, stop recording too
       if (videoTrackRef.current) {
         videoTrackRef.current.addEventListener('ended', () => {
           if (mediaRef.current?.state === 'recording') stopRecording()
@@ -101,9 +96,10 @@ export default function AudioRecorder() {
       mr.start(250)
       setRecordingState('recording')
     } catch (err: any) {
+      setActiveSource(null)
       let msg: string
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        msg = audioSource === 'mic'
+        msg = source === 'mic'
           ? 'Microphone permission denied. Please allow access in your browser.'
           : 'Screen share was cancelled or permission denied.'
       } else if (err.message === 'NO_AUDIO') {
@@ -121,72 +117,66 @@ export default function AudioRecorder() {
     setRecordingState('processing')
   }
 
+  const handleToggle = (source: AudioSource) => {
+    if (!isSessionActive || isProcessing) return
+    if (isRecording) {
+      if (activeSource === source) {
+        stopRecording()
+      } else {
+        toast.error('Another recording is already in progress.')
+      }
+    } else {
+      startRecording(source)
+    }
+  }
+
   return (
-    <div className={styles.wrap}>
-
-      {/* Source toggle — only shown when not recording */}
-      {!isRecording && !isProcessing && (
-        <div className={styles.sourceToggle}>
-          <button
-            id="btn-source-mic"
-            className={`${styles.sourceBtn} ${audioSource === 'mic' ? styles.sourceActive : ''}`}
-            onClick={() => { setAudioSource('mic'); setMicError(null) }}
-            title="Record from microphone"
-          >
-            <Mic size={14} strokeWidth={1.8} />
-            <span>Mic</span>
-          </button>
-          <button
-            id="btn-source-screen"
-            className={`${styles.sourceBtn} ${audioSource === 'screen' ? styles.sourceActive : ''}`}
-            onClick={() => { setAudioSource('screen'); setMicError(null) }}
-            title="Capture audio from screen share (captures interviewer's voice from Zoom/Meet/Teams)"
-          >
-            <Monitor size={14} strokeWidth={1.8} />
-            <span>Screen Audio</span>
-          </button>
-        </div>
-      )}
-
-      {/* Record button */}
-      <button
-        id={isRecording ? 'btn-stop-recording' : 'btn-start-recording'}
-        className={`${styles.recordBtn} ${isRecording ? styles.recording : ''}`}
-        onClick={isRecording ? stopRecording : startRecording}
-        disabled={isProcessing || !isSessionActive}
-        title={isRecording ? 'Stop recording' : audioSource === 'mic' ? 'Record from microphone' : 'Capture screen audio'}
+    <div className={styles.container}>
+      {/* Mic Audio Toggle Row */}
+      <div 
+        className={styles.toggleRow} 
+        onClick={() => handleToggle('mic')}
+        style={{ cursor: (!isSessionActive || isProcessing) ? 'not-allowed' : 'pointer', opacity: (!isSessionActive || isProcessing) ? 0.6 : 1 }}
       >
-        <div className={styles.recordInner}>
-          {isProcessing
-            ? <span className="spinner" style={{ width: 24, height: 24, borderWidth: 3 }} />
-            : isRecording
-              ? <Square size={22} fill="currentColor" />
-              : audioSource === 'screen'
-                ? <Monitor size={22} strokeWidth={1.5} />
-                : <Mic size={22} strokeWidth={1.5} />}
+        <div className={styles.toggleLeft}>
+          <button className={`${styles.iconBtn} ${isRecording && activeSource === 'mic' ? styles.iconBtnActive : ''}`}>
+            {isRecording && activeSource === 'mic' ? (
+              <span className="material-symbols-outlined text-[24px]">square</span>
+            ) : (
+              <span className="material-symbols-outlined text-[24px]">mic</span>
+            )}
+          </button>
+          <span className={styles.toggleLabel}>Mic Audio {isRecording && activeSource === 'mic' ? '(Recording...)' : ''}</span>
         </div>
-        {isRecording && <div className={styles.ripple} />}
-      </button>
+        <div className={`${styles.switch} ${isRecording && activeSource === 'mic' ? styles.switchOn : styles.switchOff}`}>
+          <div className={`${styles.switchThumb} ${isRecording && activeSource === 'mic' ? styles.thumbOn : styles.thumbOff}`}></div>
+        </div>
+      </div>
 
-      <p className={styles.label}>
-        {isProcessing
-          ? 'Processing…'
-          : isRecording
-            ? `Recording (${audioSource === 'screen' ? 'screen audio' : 'mic'}) — click to stop`
-            : audioSource === 'screen'
-              ? 'Click to share screen & capture audio'
-              : 'Click to record question'}
-      </p>
-
-      {audioSource === 'screen' && !isRecording && !isProcessing && (
-        <p className={styles.screenHint}>
-          💡 A browser dialog will open. Select your meeting tab and check <strong>"Share tab audio"</strong>
-        </p>
-      )}
+      {/* Screen Audio Toggle Row */}
+      <div 
+        className={styles.toggleRow} 
+        onClick={() => handleToggle('screen')}
+        style={{ cursor: (!isSessionActive || isProcessing) ? 'not-allowed' : 'pointer', opacity: (!isSessionActive || isProcessing) ? 0.6 : 1 }}
+      >
+        <div className={styles.toggleLeft}>
+          <button className={`${styles.iconBtn} ${isRecording && activeSource === 'screen' ? styles.iconBtnActive : ''}`}>
+            {isRecording && activeSource === 'screen' ? (
+              <span className="material-symbols-outlined text-[24px]">square</span>
+            ) : (
+              <span className="material-symbols-outlined text-[24px]">volume_up</span>
+            )}
+          </button>
+          <span className={styles.toggleLabel}>Screen Audio {isRecording && activeSource === 'screen' ? '(Recording...)' : ''}</span>
+        </div>
+        <div className={`${styles.switch} ${isRecording && activeSource === 'screen' ? styles.switchOn : styles.switchOff}`}>
+          <div className={`${styles.switchThumb} ${isRecording && activeSource === 'screen' ? styles.thumbOn : styles.thumbOff}`}></div>
+        </div>
+      </div>
 
       {micError && (
         <div className={styles.micError}>
-          <AlertTriangle size={13} />
+          <span className="material-symbols-outlined text-[16px]">warning</span>
           <span>{micError}</span>
         </div>
       )}

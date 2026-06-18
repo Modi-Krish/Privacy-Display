@@ -1,7 +1,7 @@
 {
   "name": "reai-frontend",
   "version": "1.0.0",
-  "description": "Real-Time AI Interview Copilot — Electron + React + TypeScript",
+  "description": "Real-Time AI Privacy Display — Electron + React + TypeScript",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -14,19 +14,19 @@
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "zustand": "^5.0.2",
     "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.468.0"
+    "react-router-dom": "^6.28.0",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
+    "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.0",
     "electron": "^33.2.1",
@@ -40,8 +40,8 @@
     "wait-on": "^8.0.1"
   },
   "build": {
-    "appId": "com.reai.interview-copilot",
-    "productName": "Interview Copilot",
+    "appId": "com.reai.privacy-display",
+    "productName": "Real-Time AI Privacy Display",
     "directories": {
       "output": "release"
     },
@@ -52,6 +52,15 @@
     "mac": {
       "target": "dmg",
       "icon": "public/icon.icns"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "../backend/dist/reai-backend",
+        "to": "backend/reai-backend",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

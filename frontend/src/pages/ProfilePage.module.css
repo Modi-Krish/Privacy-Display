@@ -1,157 +1,451 @@
 .page {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  background-color: #fdfbf7;
+  min-height: 100%;
+  position: relative;
   overflow-y: auto;
-  padding: 28px 32px;
-  gap: 24px;
+  overflow-x: hidden;
+  padding: 32px 28px 40px;
+  font-family: 'Patrick Hand', cursive;
 }
 
-.header { display: flex; flex-direction: column; gap: 6px; }
-.header h1 { font-size: 1.5rem; }
-.header p  { font-size: 0.875rem; }
-
-.indexingBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  background: var(--accent-light);
-  border: 1px solid rgba(124,106,247,0.3);
-  border-radius: 999px;
-  font-size: 0.78rem;
-  color: var(--accent);
-  width: fit-content;
-}
-
-.spin { animation: spin 1s linear infinite; }
-
-.grid {
+/* ── Bento Grid ──────────────────────────────────────────────────────────── */
+.bentoGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(12, 1fr);
   gap: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
 }
 
-.fullWidth { grid-column: 1 / -1; }
-
-.section { display: flex; flex-direction: column; gap: 16px; }
-
-.sectionHead { display: flex; align-items: center; justify-content: space-between; }
-
-.count {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 10px;
-}
-
-/* Resume */
-.resumeCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-}
-
-.resumeInfo { display: flex; align-items: center; gap: 12px; }
-
-.resumeName { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
-.resumeMeta { font-size: 0.78rem; color: var(--text-muted); }
-
-.dropzone {
-  border: 2px dashed var(--border);
-  border-radius: var(--radius-md);
-  padding: 40px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.18s;
-  text-align: center;
-  color: var(--text-secondary);
-}
-.dropzone:hover {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  color: var(--accent);
-}
-.dropzoneHint { font-size: 0.75rem; color: var(--text-muted); }
-
-/* Skills */
-.addSkillForm { display: flex; gap: 8px; }
-
-.skillCloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 40px;
-}
-
-.skillTag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 10px 4px 12px;
-  font-size: 0.82rem;
-  color: var(--text-primary);
-  transition: all 0.15s;
-}
-.skillTag:hover { border-color: var(--accent); }
-
-.skillDel {
-  display: flex; align-items: center; justify-content: center;
-  background: transparent; border: none; cursor: pointer;
-  color: var(--text-muted); padding: 2px; border-radius: 50%;
-  transition: all 0.15s;
-}
-.skillDel:hover { background: var(--danger); color: #fff; }
-
-.emptyHint { font-size: 0.82rem; color: var(--text-muted); }
-
-/* Projects */
-.projForm {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px;
+/* ── Hand-drawn Card ─────────────────────────────────────────────────────── */
+.md3Card {
+  background: #fff;
+  border: 3px solid #2d2d2d;
+  border-radius: 15px 255px 15px 225px / 225px 15px 255px 15px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  box-shadow: 5px 5px 0px 0px #2d2d2d;
+  position: relative;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.projectList { display: flex; flex-direction: column; gap: 10px; }
+.md3Card:hover {
+  transform: rotate(-0.5deg) translate(-2px, -2px);
+  box-shadow: 7px 7px 0px 0px #2d2d2d;
+}
+
+/* tape decoration */
+.md3Card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 28px;
+  width: 56px;
+  height: 18px;
+  background: rgba(200, 192, 180, 0.6);
+  border-radius: 3px;
+  transform: rotate(-1.5deg);
+  z-index: 1;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Kalam', cursive;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2d2d2d;
+}
+
+.cardHeaderIcon {
+  color: #2d2d2d;
+  display: flex;
+  align-items: center;
+  background: #fff9c4;
+  border: 2px solid #2d2d2d;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0px 0px #2d2d2d;
+}
+
+.cardHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.indexedBadge {
+  background: #e5e0d8;
+  color: #2d2d2d;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px 12px 6px 10px / 10px 6px 12px 4px;
+  border: 1.5px solid #2d2d2d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.indexedBadgeIcon { font-size: 14px; }
+
+/* ── Resume Section ──────────────────────────────────────────────────────── */
+.resumeSection {
+  grid-column: span 12;
+  min-height: 240px;
+}
+@media (min-width: 768px) { .resumeSection { grid-column: span 8; } }
+
+.dashedArea {
+  flex: 1;
+  border: 3px dashed rgba(45,45,45,0.4);
+  border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
+  transition: border-color 0.15s, background-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  min-height: 160px;
+}
+.dashedArea:hover, .dashedAreaActive {
+  border-color: #2d5da1;
+  background: rgba(45,93,161,0.04);
+  border-style: solid;
+}
+
+.uploadIconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fff9c4;
+  border: 2px solid #2d2d2d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+  transition: all 0.1s ease;
+}
+.dashedArea:hover .uploadIconWrap {
+  background: #2d2d2d;
+  color: #fff;
+  transform: rotate(-5deg);
+}
+
+.uploadIcon { color: #2d2d2d; transition: color 0.1s; }
+.dashedArea:hover .uploadIcon { color: #fff; }
+
+.uploadTitle {
+  font-family: 'Kalam', cursive;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d2d2d;
+  margin-bottom: 6px;
+}
+.uploadHint {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* ── Skills Section ──────────────────────────────────────────────────────── */
+.skillsSection { grid-column: span 12; }
+@media (min-width: 768px) { .skillsSection { grid-column: span 4; } }
+
+.skillsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.skillInputWrap { position: relative; width: 100%; }
+
+.skillInput {
+  width: 100%;
+  background: #fdfbf7;
+  border: 2px solid #2d2d2d;
+  border-radius: 255px;
+  padding: 10px 16px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.95rem;
+  color: #2d2d2d;
+  outline: none;
+  transition: all 0.15s;
+}
+.skillInput:focus {
+  border-color: #2d5da1;
+  box-shadow: 0 0 0 3px rgba(45,93,161,0.12);
+}
+
+.pillButton {
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  border: 2px solid #2d2d2d;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.95rem;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.1s ease;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+}
+.pillButton:active { box-shadow: none; transform: translate(3px, 3px); }
+.pillButton:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.skillAddBtn {
+  background: #e5e0d8;
+  color: #2d2d2d;
+}
+.skillAddBtn:hover:not(:disabled) {
+  background: #2d5da1;
+  border-color: #2d5da1;
+  color: #fff;
+  box-shadow: 2px 2px 0px 0px #2d5da1;
+  transform: translate(1px, 1px);
+}
+
+.skillTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.skillTag {
+  background: #fff9c4;
+  border: 2px solid #2d2d2d;
+  padding: 4px 10px;
+  border-radius: 4px 12px 6px 10px / 10px 6px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.85rem;
+  color: #2d2d2d;
+  box-shadow: 2px 2px 0px 0px rgba(45,45,45,0.2);
+  transition: all 0.1s ease;
+}
+.skillTag:hover { transform: rotate(-1deg); }
+
+.skillTagClose {
+  font-size: 14px;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  transition: color 0.1s;
+}
+.skillTagClose:hover { color: #ff4d4d; }
+
+/* ── Projects Section ────────────────────────────────────────────────────── */
+.projectsSection { grid-column: span 12; }
+
+.projectsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.addProjectBtn {
+  background: #2d2d2d;
+  color: #fff;
+  border-color: #2d2d2d;
+  width: auto;
+  padding: 8px 20px;
+  box-shadow: 3px 3px 0px 0px rgba(45,45,45,0.3);
+}
+.addProjectBtn:hover {
+  background: #ff4d4d;
+  border-color: #ff4d4d;
+  box-shadow: 2px 2px 0px 0px rgba(255,77,77,0.4);
+  transform: translate(1px, 1px);
+}
+
+.projectsEmpty {
+  background: #fdfbf7;
+  border: 2px dashed rgba(45,45,45,0.3);
+  border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
+  padding: 28px;
+  text-align: center;
+}
+.projectsEmptyIcon {
+  font-size: 32px;
+  color: #888;
+  opacity: 0.5;
+  margin-bottom: 10px;
+  display: block;
+}
+.projectsEmptyText {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.9rem;
+  color: #888;
+  font-style: italic;
+}
+
+/* ── Resume Active ───────────────────────────────────────────────────────── */
+.resumeActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff9c4;
+  border: 2px solid #2d2d2d;
+  border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
+  padding: 14px 18px;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+}
+.resumeInfoWrap { display: flex; align-items: center; gap: 14px; }
+.resumeIcon { font-size: 28px; color: #555; }
+.resumeName {
+  font-family: 'Kalam', cursive;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d2d2d;
+  margin-bottom: 2px;
+}
+.resumeMeta {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.removeBtn {
+  background: transparent;
+  color: #ff4d4d;
+  border: 2px solid #ff4d4d;
+  padding: 6px 14px;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.9rem;
+  transition: all 0.1s ease;
+  box-shadow: 2px 2px 0px 0px rgba(255,77,77,0.3);
+}
+.removeBtn:hover {
+  background: #ff4d4d;
+  color: #fff;
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+/* ── Project Cards ───────────────────────────────────────────────────────── */
+.projectList {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
 
 .projectCard {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  gap: 12px;
-  transition: border-color 0.15s;
+  background: #fdfbf7;
+  border: 2px solid #2d2d2d;
+  border-radius: 6px 18px 8px 14px / 14px 8px 18px 6px;
+  padding: 18px;
+  margin-bottom: 10px;
+  box-shadow: 3px 3px 0px 0px rgba(45,45,45,0.15);
+  transition: all 0.1s ease;
 }
-.projectCard:hover { border-color: var(--border); }
+.projectCard:hover {
+  box-shadow: 5px 5px 0px 0px #2d2d2d;
+  transform: rotate(-0.5deg) translate(-1px, -1px);
+}
 
-.projInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.projTitle { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
-.projDesc  { font-size: 0.82rem; color: var(--text-secondary); }
-.projTech  {
-  font-size: 0.75rem;
-  color: var(--accent);
-  font-family: var(--font-mono);
-  background: var(--accent-light);
-  border-radius: 4px;
-  padding: 2px 8px;
+.projInfo { display: flex; flex-direction: column; gap: 6px; }
+.projTitle {
+  font-family: 'Kalam', cursive;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d2d2d;
+}
+.projDesc {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.9rem;
+  color: #555;
+}
+.projTech {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #e5e0d8;
+  color: #2d2d2d;
+  padding: 3px 8px;
+  border-radius: 3px 9px 4px 7px / 7px 4px 9px 3px;
+  border: 1.5px solid rgba(45,45,45,0.3);
   width: fit-content;
 }
+
+/* ── Project Form ────────────────────────────────────────────────────────── */
+.projectForm {
+  background: #fff9c4;
+  border: 2px solid #2d2d2d;
+  border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+  box-shadow: 4px 4px 0px 0px #2d2d2d;
+}
+.formGroup { display: flex; flex-direction: column; gap: 6px; }
+.formLabel {
+  font-family: 'Kalam', cursive;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2d2d2d;
+}
+.formActions { display: flex; gap: 10px; margin-top: 6px; }
+
+.cancelBtn {
+  background: #e5e0d8;
+  color: #555;
+  border-color: rgba(45,45,45,0.4);
+}
+.cancelBtn:hover {
+  background: #2d2d2d;
+  color: #fff;
+  border-color: #2d2d2d;
+}
+
+/* ── Indexing Badge ──────────────────────────────────────────────────────── */
+.indexingBadge {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #fff9c4;
+  color: #2d2d2d;
+  border: 2px solid #2d2d2d;
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.9rem;
+  font-weight: 700;
+  z-index: 20;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+}
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }

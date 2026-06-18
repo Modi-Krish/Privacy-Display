@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { api } from '@/api/client'
+import { api, streamPost } from '@/api/client'
 
 export interface ChunkView {
   text: string
@@ -29,11 +29,14 @@ interface InterviewState {
   isSessionActive: boolean
   recordingState: RecordingState
 
+  // Interaction mode
+  realtimeMode: boolean
+
   // Current turn
   currentTurn: InterviewTurn | null
   error: string | null
 
-  // Session history
+  // Session history (shared between both modes)
   history: InterviewTurn[]
 
   // Actions
@@ -44,6 +47,9 @@ interface InterviewState {
   setRecordingState: (state: RecordingState) => void
   clearCurrentTurn: () => void
   clearError: () => void
+  setRealtimeMode: (enabled: boolean) => void
+  /** Called by RealtimeVoicePanel when a real-time turn completes */
+  addRealtimeTurn: (question: string, answer: string, latencyMs: number) => void
 }
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
@@ -62,6 +68,7 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   sessionId: null,
   isSessionActive: false,
   recordingState: 'idle',
+  realtimeMode: false,
   currentTurn: null,
   error: null,
   history: [],
@@ -81,22 +88,65 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   submitAudio: async (blob) => {
     const { sessionId } = get()
     if (!sessionId) return
-    set({ recordingState: 'processing', error: null })
+    set({ recordingState: 'processing', error: null, currentTurn: null })
     try {
       const audio_b64 = await blobToBase64(blob)
-      const { data } = await api.post('/api/interview/question', {
-        session_id: sessionId,
-        audio_b64,
-      })
-      const turn: InterviewTurn = data
-      set((s) => ({
-        currentTurn: turn,
-        history: [...s.history, turn],
-        recordingState: 'done',
-      }))
+      let currentTurnAccumulator: InterviewTurn | null = null
+      
+      await streamPost(
+        '/api/interview/question/stream',
+        {
+          session_id: sessionId,
+          audio_b64,
+        },
+        {
+          onInfo: (info) => {
+            const initialTurn: InterviewTurn = {
+              question_id: info.question_id,
+              question_text: info.question_text || '🎙 Audio Question',
+              category: 'Technical',
+              category_confidence: 1.0,
+              retrieved_context: info.retrieved_context,
+              generated_prompt: info.generated_prompt,
+              answer: '',
+              confidence_score: 0.0,
+              transcription_confidence: null,
+              is_personalized: info.retrieved_context.length > 0,
+              latency_ms: 0,
+            }
+            currentTurnAccumulator = initialTurn
+            set({ currentTurn: initialTurn })
+          },
+          onToken: (token) => {
+            if (currentTurnAccumulator) {
+              currentTurnAccumulator.answer += token
+              set({ currentTurn: { ...currentTurnAccumulator } })
+            }
+          },
+          onDone: (done) => {
+            if (currentTurnAccumulator) {
+              currentTurnAccumulator.category = done.category
+              currentTurnAccumulator.category_confidence = done.category_confidence
+              currentTurnAccumulator.confidence_score = done.confidence_score
+              currentTurnAccumulator.is_personalized = done.is_personalized
+              currentTurnAccumulator.latency_ms = done.latency_ms
+              
+              const finalTurn = { ...currentTurnAccumulator }
+              set((s) => ({
+                currentTurn: finalTurn,
+                history: [...s.history, finalTurn],
+                recordingState: 'done',
+              }))
+            }
+          },
+          onError: (err) => {
+            set({ error: err, recordingState: 'error' })
+          },
+        }
+      )
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Processing failed',
+        error: err.message || 'Processing failed',
         recordingState: 'error',
       })
     }
@@ -105,21 +155,64 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   submitText: async (question) => {
     const { sessionId } = get()
     if (!sessionId) return
-    set({ recordingState: 'processing', error: null })
+    set({ recordingState: 'processing', error: null, currentTurn: null })
     try {
-      const { data } = await api.post('/api/interview/question', {
-        session_id: sessionId,
-        question,
-      })
-      const turn: InterviewTurn = data
-      set((s) => ({
-        currentTurn: turn,
-        history: [...s.history, turn],
-        recordingState: 'done',
-      }))
+      let currentTurnAccumulator: InterviewTurn | null = null
+      
+      await streamPost(
+        '/api/interview/question/stream',
+        {
+          session_id: sessionId,
+          question,
+        },
+        {
+          onInfo: (info) => {
+            const initialTurn: InterviewTurn = {
+              question_id: info.question_id,
+              question_text: info.question_text || question,
+              category: 'Technical',
+              category_confidence: 1.0,
+              retrieved_context: info.retrieved_context,
+              generated_prompt: info.generated_prompt,
+              answer: '',
+              confidence_score: 0.0,
+              transcription_confidence: null,
+              is_personalized: info.retrieved_context.length > 0,
+              latency_ms: 0,
+            }
+            currentTurnAccumulator = initialTurn
+            set({ currentTurn: initialTurn })
+          },
+          onToken: (token) => {
+            if (currentTurnAccumulator) {
+              currentTurnAccumulator.answer += token
+              set({ currentTurn: { ...currentTurnAccumulator } })
+            }
+          },
+          onDone: (done) => {
+            if (currentTurnAccumulator) {
+              currentTurnAccumulator.category = done.category
+              currentTurnAccumulator.category_confidence = done.category_confidence
+              currentTurnAccumulator.confidence_score = done.confidence_score
+              currentTurnAccumulator.is_personalized = done.is_personalized
+              currentTurnAccumulator.latency_ms = done.latency_ms
+              
+              const finalTurn = { ...currentTurnAccumulator }
+              set((s) => ({
+                currentTurn: finalTurn,
+                history: [...s.history, finalTurn],
+                recordingState: 'done',
+              }))
+            }
+          },
+          onError: (err) => {
+            set({ error: err, recordingState: 'error' })
+          },
+        }
+      )
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Processing failed',
+        error: err.message || 'Processing failed',
         recordingState: 'error',
       })
     }
@@ -128,4 +221,24 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   setRecordingState: (state) => set({ recordingState: state }),
   clearCurrentTurn: () => set({ currentTurn: null, recordingState: 'idle' }),
   clearError: () => set({ error: null }),
+  setRealtimeMode: (enabled) => set({ realtimeMode: enabled }),
+  addRealtimeTurn: (question, answer, latencyMs) => {
+    const realtimeTurn: InterviewTurn = {
+      question_id: `rt-${Date.now()}`,
+      question_text: question,
+      category: 'Technical',
+      category_confidence: 1.0,
+      retrieved_context: [],
+      generated_prompt: '',
+      answer,
+      confidence_score: 0,
+      transcription_confidence: null,
+      is_personalized: false,
+      latency_ms: latencyMs,
+    }
+    set((s) => ({
+      history: [...s.history, realtimeTurn],
+      currentTurn: realtimeTurn,
+    }))
+  },
 }))

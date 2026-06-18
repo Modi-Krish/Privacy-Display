@@ -35,11 +35,30 @@ def setup_logging(level: str = "INFO") -> None:
     root = logging.getLogger()
     root.setLevel(level)
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JSONFormatter())
+    # 1. Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(JSONFormatter())
+
+    # 2. File handler in AppData/REAI/logs
+    import os
+    appdata = os.getenv("APPDATA")
+    if not appdata:
+        import sys as sys_platform
+        appdata = os.path.expanduser("~/Library/Application Support" if sys_platform.platform == "darwin" else "~/.local/share")
+    
+    log_dir = os.path.join(appdata, "REAI", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "backend.log")
+    
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s [%(name)s]: %(message)s"
+    )
+    file_handler.setFormatter(file_formatter)
 
     root.handlers.clear()
-    root.addHandler(handler)
+    root.addHandler(console_handler)
+    root.addHandler(file_handler)
 
     # Silence noisy third-party loggers
     for noisy in ("uvicorn.access", "httpx", "httpcore"):

@@ -1,46 +1,48 @@
 .drawer {
   margin-top: 8px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  background: #fdfbf7;
+  border: 2px solid rgba(45,45,45,0.3);
+  border-radius: 6px 18px 8px 14px / 14px 8px 18px 6px;
   overflow: hidden;
 }
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px dashed rgba(45,45,45,0.2);
 }
 
 .tab {
   padding: 9px 14px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  font-family: var(--font-sans);
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-family: 'Patrick Hand', cursive;
+  color: #888;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s;
-  border-bottom: 2px solid transparent;
+  transition: all 0.1s;
+  border-bottom: 3px solid transparent;
 }
 
-.tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+.tab:hover { color: #2d2d2d; background: #e5e0d8; }
 
 .tabActive {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: #ff4d4d;
+  border-bottom-color: #ff4d4d;
+  font-family: 'Kalam', cursive;
+  font-weight: 700;
 }
 
 .chunkList {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 8px;
+  gap: 6px;
+  padding: 10px;
 }
 
 .chunk {
-  background: var(--bg-surface);
-  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1.5px solid rgba(45,45,45,0.2);
+  border-radius: 4px 12px 6px 10px / 10px 6px 12px 4px;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
@@ -54,40 +56,14 @@
 }
 
 .chunkSource {
+  font-family: 'Kalam', cursive;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  color: #888;
 }
 
-.scoreBar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.scoreBar::before {
-  content: '';
-  display: block;
-  width: 60px;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  position: relative;
-  overflow: hidden;
-}
-
-.scoreFill {
-  /* rendered inside scoreBar via inline width */
-  height: 4px;
-  background: var(--accent);
-  border-radius: 2px;
-  width: 60px;
-  transform-origin: left;
-}
-
-/* Override: use absolute positioned bar */
 .scoreBar {
   position: relative;
   display: flex;
@@ -95,21 +71,25 @@
   gap: 6px;
 }
 
-/* Simple inline bar approach */
 .scoreFill {
   height: 4px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  background: #ff4d4d;
   border-radius: 2px;
   min-width: 4px;
   max-width: 60px;
   transition: width 0.4s ease;
 }
 
-.scoreLabel { font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
+.scoreLabel {
+  font-size: 0.7rem;
+  color: #888;
+  font-family: 'Courier New', monospace;
+}
 
 .chunkText {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.85rem;
+  color: #555;
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -119,29 +99,33 @@
 
 .empty {
   padding: 16px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.9rem;
+  color: #888;
   text-align: center;
+  font-style: italic;
 }
 
 .metaRow {
   padding: 6px 4px;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border-subtle);
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.78rem;
+  color: #888;
+  border-top: 1px dashed rgba(45,45,45,0.2);
   margin-top: 4px;
 }
 
 .promptBox { padding: 12px; }
 
 .promptText {
-  font-family: var(--font-mono);
+  font-family: 'Courier New', monospace;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: #555;
   white-space: pre-wrap;
   line-height: 1.7;
-  background: var(--bg-base);
-  border-radius: var(--radius-sm);
+  background: #fdfbf7;
+  border: 2px dashed rgba(45,45,45,0.2);
+  border-radius: 4px 12px 6px 10px / 10px 6px 12px 4px;
   padding: 12px;
   max-height: 300px;
   overflow-y: auto;

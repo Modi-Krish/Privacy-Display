@@ -54,3 +54,4 @@ class ProfileOut(BaseModel):
     summary: str | None
 
     model_config = {"from_attributes": True}
+

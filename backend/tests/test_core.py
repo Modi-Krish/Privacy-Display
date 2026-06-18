@@ -26,18 +26,6 @@ async def test_health(client):
     assert r.json()["status"] == "ok"
 
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
-
-@pytest.mark.asyncio
-async def test_register_and_login(client):
-    payload = {"email": "test@example.com", "password": "password123"}
-    r = await client.post("/api/auth/register", json=payload)
-    assert r.status_code in (201, 409)  # 409 if already exists in test DB
-
-    r = await client.post("/api/auth/login", json=payload)
-    assert r.status_code == 200
-    assert "user" in r.json()
-
 
 # ── Chunker ───────────────────────────────────────────────────────────────────
 

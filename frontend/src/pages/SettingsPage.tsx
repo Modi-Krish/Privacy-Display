@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Key, Cpu, Mic2, Save, Eye, EyeOff, CheckCircle, Shield, AlertTriangle } from 'lucide-react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import styles from './SettingsPage.module.css'
+import { useSettingsStore } from '@/store/settingsStore'
 
 const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
 const WHISPER_SIZES = ['tiny', 'base', 'small', 'medium']
@@ -14,40 +14,21 @@ export default function SettingsPage() {
   const [saved,       setSaved]       = useState(false)
 
   const isElectron = window.electronAPI !== undefined
-  const [screenProtect, setScreenProtect] = useState(() => {
-    return localStorage.getItem('screen_protection') === 'true'
-  })
-  const [skipTaskbar, setSkipTaskbar] = useState(() => {
-    return localStorage.getItem('skip_taskbar') === 'true'
-  })
-
-  // Sync state if changed via F9 global hotkey
-  useEffect(() => {
-    const handleSync = () => {
-      setScreenProtect(localStorage.getItem('screen_protection') === 'true')
-    }
-    window.addEventListener('screen-protection-changed', handleSync)
-    return () => {
-      window.removeEventListener('screen-protection-changed', handleSync)
-    }
-  }, [])
+  const { 
+    stealthActive, skipTaskbar, toggleStealth, toggleSkipTaskbar,
+    theme, typography, setTheme, setTypography 
+  } = useSettingsStore()
 
   const handleToggleScreenProtect = (checked: boolean) => {
-    setScreenProtect(checked)
-    localStorage.setItem('screen_protection', checked ? 'true' : 'false')
-    if (isElectron && window.electronAPI) {
-      window.electronAPI.setContentProtection(checked)
+    toggleStealth(checked)
+    if (isElectron) {
       toast.success(checked ? 'Screen protection enabled!' : 'Screen protection disabled.')
     }
-    // Dispatch a custom event to update other components dynamically
-    window.dispatchEvent(new Event('screen-protection-changed'))
   }
 
   const handleToggleSkipTaskbar = (checked: boolean) => {
-    setSkipTaskbar(checked)
-    localStorage.setItem('skip_taskbar', checked ? 'true' : 'false')
-    if (isElectron && window.electronAPI) {
-      window.electronAPI.setSkipTaskbar(checked)
+    toggleSkipTaskbar(checked)
+    if (isElectron) {
       toast.success(checked ? 'Application icon hidden from taskbar.' : 'Application icon visible on taskbar.')
     }
   }
@@ -63,193 +44,224 @@ export default function SettingsPage() {
 
   return (
     <div className={styles.page}>
+      {/* Header */}
       <div className={styles.header}>
-        <h1>Settings</h1>
-        <p>Configure your API key, model selection, and audio preferences.</p>
+        <h1 className={styles.headerTitle}>Settings</h1>
+        <p className={styles.headerDesc}>Manage your AI integrations and privacy preferences.</p>
       </div>
 
-      <div className={styles.sections}>
-        {/* Gemini API */}
-        <section className={`card ${styles.section}`}>
-          <div className={styles.sectionHead}>
-            <Key size={16} style={{ color: 'var(--accent)' }} />
-            <h2>Gemini API</h2>
+      <div className={styles.gridContainer}>
+        {/* Gemini API Card */}
+        <section className={styles.md3Card}>
+          <div className={styles.cardHeader}>
+            <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>smart_toy</span>
+            <h3 className={styles.cardHeaderTitle}>Gemini API</h3>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="input-api-key">API Key</label>
-            <div className={styles.inputWrap}>
-              <input
-                id="input-api-key"
-                type={showKey ? 'text' : 'password'}
-                className={`input ${styles.inputPadded}`}
-                placeholder="AIza…"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                spellCheck={false}
-              />
-              <button
-                id="btn-toggle-key"
-                type="button"
-                className={styles.eyeBtn}
-                onClick={() => setShowKey(!showKey)}
-              >
-                {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
-            </div>
-            <p className="form-error" style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: 4 }}>
-              Stored locally only. Get yours at{' '}
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
-                style={{ color: 'var(--accent)' }}>
-                aistudio.google.com
-              </a>
-            </p>
+          {/* M3 Filled Text Field: API Key */}
+          <div className={styles.textField}>
+            <input
+              id="api-key"
+              type={showKey ? 'text' : 'password'}
+              className={styles.textFieldInput}
+              placeholder=" "
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              spellCheck={false}
+            />
+            <label className={styles.textFieldLabel} htmlFor="api-key">API Key</label>
+            <button
+              type="button"
+              className={styles.textFieldIconBtn}
+              onClick={() => setShowKey(!showKey)}
+            >
+              <span className="material-symbols-outlined">
+                {showKey ? 'visibility_off' : 'visibility'}
+              </span>
+            </button>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="select-model">Model</label>
+          {/* M3 Filled Select: Model */}
+          <div className={styles.textField}>
             <select
-              id="select-model"
-              className="input"
+              id="model-select"
+              className={styles.textFieldSelect}
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              style={{ cursor: 'pointer' }}
             >
               {MODELS.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
+            <label className={styles.textFieldLabel} htmlFor="model-select">Model</label>
+            <span className={`material-symbols-outlined ${styles.selectIcon}`}>arrow_drop_down</span>
           </div>
         </section>
 
-        {/* Audio */}
-        <section className={`card ${styles.section}`}>
-          <div className={styles.sectionHead}>
-            <Mic2 size={16} style={{ color: 'var(--accent)' }} />
-            <h2>Speech Recognition</h2>
-          </div>
+        {/* Configuration Column */}
+        <div className={styles.column}>
+          {/* Speech Recognition Card */}
+          <section className={styles.md3Card}>
+            <div className={styles.cardHeader}>
+              <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>mic</span>
+              <h3 className={styles.cardHeaderTitle}>Speech Recognition</h3>
+            </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="select-whisper">Whisper Model Size</label>
-            <select
-              id="select-whisper"
-              className="input"
-              value={whisperSize}
-              onChange={(e) => setWhisperSize(e.target.value)}
-              style={{ cursor: 'pointer' }}
-            >
-              {WHISPER_SIZES.map((s) => (
-                <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                  {s === 'tiny'  ? ' — fastest, lower accuracy' : ''}
-                  {s === 'base'  ? ' — recommended (default)' : ''}
-                  {s === 'small' ? ' — better accuracy' : ''}
-                  {s === 'medium' ? ' — best accuracy, slower' : ''}
-                </option>
-              ))}
-            </select>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
-              Larger models are more accurate but slower. Requires backend restart to apply.
-            </p>
-          </div>
+            <div className={styles.textField}>
+              <select
+                id="whisper-size"
+                className={styles.textFieldSelect}
+                value={whisperSize}
+                onChange={(e) => setWhisperSize(e.target.value)}
+              >
+                {WHISPER_SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                    {s === 'tiny'  ? ' (Fastest, low accuracy)' : ''}
+                    {s === 'base'  ? ' (Balanced)' : ''}
+                    {s === 'small' ? ' (High accuracy, slower)' : ''}
+                    {s === 'medium' ? ' (Best accuracy, slowest)' : ''}
+                  </option>
+                ))}
+              </select>
+              <label className={styles.textFieldLabel} htmlFor="whisper-size">Whisper Model Size</label>
+              <span className={`material-symbols-outlined ${styles.selectIcon}`}>arrow_drop_down</span>
+            </div>
+          </section>
 
-          <div className={styles.modelInfo}>
-            <Cpu size={14} />
-            <span>Processing device: CPU (configure GPU via backend <code>.env</code>)</span>
-          </div>
-        </section>
+          {/* Appearance & Accessibility Card */}
+          <section className={styles.md3Card} style={{ marginBottom: '24px' }}>
+            <div className={styles.cardHeader}>
+              <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>palette</span>
+              <h3 className={styles.cardHeaderTitle}>Appearance & Accessibility</h3>
+            </div>
 
-        {/* Privacy & Screen Protection */}
-        <section className={`card ${styles.section}`}>
-          <div className={styles.sectionHead}>
-            <Shield size={16} style={{ color: 'var(--accent)' }} />
-            <h2>Privacy & Security</h2>
-          </div>
+            {/* Toggle: Dark Mode */}
+            <label className={styles.switchItem}>
+              <div className={styles.switchText}>
+                <span className={styles.switchTitle}>Dark Mode</span>
+                <span className={styles.switchDesc}>Easier on the eyes in low light.</span>
+              </div>
+              <div className={styles.m3SwitchWrap}>
+                <input
+                  type="checkbox"
+                  className={styles.m3SwitchInput}
+                  checked={theme === 'dark'}
+                  onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+                />
+                <div className={styles.switchTrack}>
+                  <div className={styles.switchThumb}></div>
+                </div>
+              </div>
+            </label>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className={styles.toggleGroup}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>
+            {/* Toggle: Standard Typography */}
+            <label className={styles.switchItem}>
+              <div className={styles.switchText}>
+                <span className={styles.switchTitle}>Standard Typography</span>
+                <span className={styles.switchDesc}>Use standard fonts for better readability.</span>
+              </div>
+              <div className={styles.m3SwitchWrap}>
+                <input
+                  type="checkbox"
+                  className={styles.m3SwitchInput}
+                  checked={typography === 'standard'}
+                  onChange={(e) => setTypography(e.target.checked ? 'standard' : 'handwritten')}
+                />
+                <div className={styles.switchTrack}>
+                  <div className={styles.switchThumb}></div>
+                </div>
+              </div>
+            </label>
+          </section>
+
+          {/* Privacy & Security Card */}
+          <section className={styles.md3Card}>
+            <div className={styles.cardHeader}>
+              <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>shield_lock</span>
+              <h3 className={styles.cardHeaderTitle}>Privacy & Security</h3>
+            </div>
+
+            {/* Toggle 1: Screen Protect */}
+            <label className={styles.switchItem}>
+              <div className={styles.switchText}>
+                <span className={styles.switchTitle}>
                   Anti-Screen Share
-                  <kbd style={{
-                    background: 'var(--bg-base)',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    marginLeft: '8px',
-                    border: '1px solid var(--border)',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent)'
-                  }}>Ctrl + Shift + A + S</kbd>
                 </span>
-                <span className={styles.toggleDesc}>
+                <span className={styles.switchDesc}>
                   {isElectron 
-                    ? 'Hide this application and mouse cursor from screen sharing and recordings.' 
+                    ? 'Obscures sensitive info during presentations.' 
                     : 'Requires running in the desktop app wrapper.'}
                 </span>
               </div>
-              <label className={styles.switch}>
+              <div className={styles.m3SwitchWrap}>
                 <input
                   type="checkbox"
-                  checked={screenProtect}
+                  className={styles.m3SwitchInput}
+                  checked={stealthActive}
                   disabled={!isElectron}
                   onChange={(e) => handleToggleScreenProtect(e.target.checked)}
                 />
-                <span className={styles.slider}></span>
-              </label>
-            </div>
+                <div className={styles.switchTrack}>
+                  <div className={styles.switchThumb}></div>
+                </div>
+              </div>
+            </label>
 
-            <div className={styles.toggleGroup}>
-              <div className={styles.toggleLabel}>
-                <span className={styles.toggleTitle}>Hide from Taskbar</span>
-                <span className={styles.toggleDesc}>
+            {/* Toggle 2: Hide Taskbar */}
+            <label className={styles.switchItem}>
+              <div className={styles.switchText}>
+                <span className={styles.switchTitle}>Hide from Taskbar</span>
+                <span className={styles.switchDesc}>
                   {isElectron 
-                    ? 'Remove the application icon from your OS taskbar (use Alt+Tab to switch back).' 
+                    ? 'Run stealthily in the system tray.' 
                     : 'Requires running in the desktop app wrapper.'}
                 </span>
               </div>
-              <label className={styles.switch}>
+              <div className={styles.m3SwitchWrap}>
                 <input
                   type="checkbox"
+                  className={styles.m3SwitchInput}
                   checked={skipTaskbar}
                   disabled={!isElectron}
                   onChange={(e) => handleToggleSkipTaskbar(e.target.checked)}
                 />
-                <span className={styles.slider}></span>
-              </label>
-            </div>
-          </div>
-
-          {!isElectron ? (
-            <div className={styles.privacyAlert}>
-              <AlertTriangle size={16} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <strong>Web Browser Sandbox Active:</strong> Web browsers cannot block system-level screen capture or customize taskbar items. 
-                <div style={{ marginTop: 4 }}>
-                  To hide the app during an interview:
-                  <ul style={{ paddingLeft: 14, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <li>Launch via the desktop app (Electron).</li>
-                    <li>Or, when sharing your screen, select <strong>only your specific window</strong> (e.g. VS Code or browser tab under test) rather than sharing your <strong>Entire Screen</strong>.</li>
-                  </ul>
+                <div className={styles.switchTrack}>
+                  <div className={styles.switchThumb}></div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Status: {screenProtect ? '🛡️ Screen Protected' : '👁️ Visible'} | {skipTaskbar ? '🙈 Hidden from taskbar' : '🐵 Visible on taskbar'}
-            </p>
-          )}
-        </section>
+            </label>
+
+            {!isElectron && (
+              <div className={styles.privacyAlert}>
+                <span className={`material-symbols-outlined ${styles.alertIcon}`}>warning</span>
+                <div>
+                  <strong>Web Browser Sandbox Active:</strong> Web browsers cannot block system-level screen capture or customize taskbar items. 
+                  <div style={{ marginTop: 4 }}>
+                    To hide the app during an interview:
+                    <ul style={{ paddingLeft: 14, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <li>Launch via the desktop app (Electron).</li>
+                      <li>Or share only your specific window rather than your Entire Screen.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
-      <div className={styles.footer}>
+      {/* Floating Action Button (FAB) for Save */}
+      <div className={styles.fabContainer}>
         <button
-          id="btn-save-settings"
-          className="btn btn-primary"
+          className={styles.fab}
           onClick={handleSave}
           disabled={saved}
         >
-          {saved ? <><CheckCircle size={16} /> Saved</> : <><Save size={16} /> Save Settings</>}
+          <span className="material-symbols-outlined">
+            {saved ? 'check_circle' : 'save'}
+          </span>
+          {saved ? 'Saved' : 'Save Settings'}
         </button>
       </div>
     </div>

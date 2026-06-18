@@ -1,4 +1,4 @@
-# 🚀 Real-Time AI Interview Copilot (REAI)
+# 🚀 Real-Time AI Privacy Display (REAI)
 
 [![GitHub License](https://img.shields.io/github/license/Modi-Krish/Privacy-Display?style=for-the-badge&color=blue)](LICENSE)
 [![GitHub Issues](https://img.shields.io/github/issues/Modi-Krish/Privacy-Display?style=for-the-badge&color=red)](https://github.com/Modi-Krish/Privacy-Display/issues)
@@ -11,12 +11,12 @@ An intelligent, low-latency, and privacy-focused full-stack desktop application 
 
 ## 📸 Project Interface & Layout
 
-The desktop application is built with a dark-themed glassmorphism interface, providing visual feedback including a dynamic AI confidence gauge, live transcription streams, and an integrated workspace browser.
+The desktop application is built with a light-themed, pencil-sketch aesthetic featuring glassmorphism elements. It provides visual feedback including a dynamic AI confidence gauge, live transcription streams, and an integrated workspace browser with full multi-tab support.
 
-* [App Shell & Live Workspace](frontend/src/components/AppShell.tsx)
+* [App Shell & Glassmorphism Dock](frontend/src/components/AppShell.tsx)
 * [Dynamic Interview Dashboard](frontend/src/pages/InterviewPage.tsx)
 * [Profile Context Manager](frontend/src/pages/ProfilePage.tsx)
-* [Workspace Web Browser Sandbox](frontend/src/pages/BrowserPage.tsx)
+* [ReAI Multi-Tab Web Browser](frontend/src/pages/BrowserPage.tsx)
 * [System Configuration Console](frontend/src/pages/SettingsPage.tsx)
 
 ---
@@ -64,7 +64,8 @@ graph TD
 
 ---
 
-## 🔒 OS Privacy & Security Controls
+## 🌟 Core Features & Security Controls
+* **ReAI Multi-Tab Browser:** A fully functional embedded web browser built with Electron `<webview>` tags. Features persistent background tabs, a smart address bar, and dynamic navigation integration.
 * **Anti-Screen Share (Anti-Spy):** Toggleable canvas/window level block. When enabled, the application blackouts its contents and mouse cursor in standard screensharing software (Zoom, Discord, Microsoft Teams).
 * **Global Privacy Hotkey:** Toggle Privacy Mode on/off immediately using the global key combo:
   `Ctrl + Shift + A + S`
@@ -78,7 +79,7 @@ Create a `.env` file in the root directory from the `.env.example` template:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `APP_NAME` | `Real-Time AI Interview Copilot` | The display title of the FastAPI application. |
+| `APP_NAME` | `Real-Time AI Privacy Display` | The display title of the FastAPI application. |
 | `DEBUG` | `false` | Enables reloaders and echo database outputs. |
 | `DATABASE_URL` | `sqlite+aiosqlite:///./data/reai.db` | Database connection string (Postgres/SQLite). |
 | `SECRET_KEY` | `your_secret_key` | Secret used to sign JWT authentication cookies. |

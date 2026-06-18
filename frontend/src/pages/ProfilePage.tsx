@@ -1,29 +1,38 @@
 import { useEffect, useRef, useState } from 'react'
-import { Upload, Trash2, Plus, X, FileText, Briefcase, Code2, CheckCircle, Loader } from 'lucide-react'
 import { useProfileStore } from '@/store/profileStore'
 import toast from 'react-hot-toast'
 import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
   const {
-    profile, resume, projects, skills, isIndexing,
-    fetchProfile, fetchProjects, fetchSkills,
+    resume, projects, skills, isIndexing, indexingProgress,
+    fetchProfile, fetchProjects, fetchSkills, fetchIndexingProgress,
     uploadResume, deleteResume,
     addProject, deleteProject,
     addSkill, deleteSkill,
-    updateProfile,
   } = useProfileStore()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [newSkill,  setNewSkill]  = useState('')
   const [showAddProj, setShowAddProj] = useState(false)
   const [projForm, setProjForm]   = useState({ title: '', description: '', technologies: '' })
+  const [isDragActive, setIsDragActive] = useState(false)
 
   useEffect(() => {
     fetchProfile()
     fetchProjects()
     fetchSkills()
   }, [])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isIndexing) {
+      interval = setInterval(() => {
+        fetchIndexingProgress()
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isIndexing, fetchIndexingProgress])
 
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -34,7 +43,9 @@ export default function ProfilePage() {
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Upload failed')
     }
-    e.target.value = ''
+    if (e.target) {
+        e.target.value = ''
+    }
   }
 
   const handleDeleteResume = async () => {
@@ -63,34 +74,79 @@ export default function ProfilePage() {
     } catch { toast.error('Could not add project') }
   }
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setIsDragActive(true)
+    } else if (e.type === 'dragleave') {
+      setIsDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragActive(false)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const f = e.dataTransfer.files[0]
+      const dt = new DataTransfer()
+      dt.items.add(f)
+      if (fileInputRef.current) {
+        fileInputRef.current.files = dt.files
+        handleResumeUpload({ target: fileInputRef.current } as any)
+      }
+    }
+  }
+
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <h1>Profile</h1>
-        <p>Your resume, projects and skills power the RAG retrieval during interviews.</p>
-        {isIndexing && (
-          <div className={styles.indexingBadge}>
-            <Loader size={13} className={styles.spin} />
+
+      {isIndexing && (
+        <div className={styles.indexingBadge} style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className={`material-symbols-outlined ${styles.spin}`}>sync</span>
             <span>Updating knowledge base…</span>
           </div>
-        )}
-      </div>
-
-      <div className={styles.grid}>
-        {/* ── Resume ────────────────────────────────── */}
-        <section className={`card ${styles.section}`}>
-          <div className={styles.sectionHead}>
-            <div className="flex items-center gap-2">
-              <FileText size={16} style={{ color: 'var(--accent)' }} />
-              <h2>Resume</h2>
+          {indexingProgress && (
+            <div style={{ width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', opacity: 0.8 }}>
+                <span>{indexingProgress.current_file || 'Initializing...'}</span>
+                <span>{indexingProgress.progress_pct}%</span>
+              </div>
+              <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${indexingProgress.progress_pct}%`, background: 'var(--primary)', transition: 'width 0.3s ease' }} />
+              </div>
+              {indexingProgress.time_remaining_sec !== null && indexingProgress.time_remaining_sec > 0 && (
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.6, textAlign: 'right' }}>
+                  ~{indexingProgress.time_remaining_sec}s remaining
+                </div>
+              )}
             </div>
-            {resume && <span className="badge badge-success"><CheckCircle size={11} /> Indexed</span>}
-          </div>
+          )}
+        </div>
+      )}
+
+      <div className={styles.bentoGrid}>
+        {/* ── Resume Section ────────────────────────────────── */}
+        <section className={`${styles.md3Card} ${styles.resumeSection}`}>
+          <h2 className={styles.cardHeader}>
+            <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>description</span>
+            Resume
+            {resume && (
+              <div className={styles.cardHeaderRight}>
+                <span className={styles.indexedBadge}>
+                  <span className={`material-symbols-outlined ${styles.indexedBadgeIcon}`}>check_circle</span>
+                  Indexed
+                </span>
+              </div>
+            )}
+          </h2>
 
           {resume ? (
-            <div className={styles.resumeCard}>
-              <div className={styles.resumeInfo}>
-                <FileText size={20} style={{ color: 'var(--text-muted)' }} />
+            <div className={styles.resumeActive}>
+              <div className={styles.resumeInfoWrap}>
+                <span className={`material-symbols-outlined ${styles.resumeIcon}`}>file_present</span>
                 <div>
                   <p className={styles.resumeName}>{resume.file_name}</p>
                   <p className={styles.resumeMeta}>
@@ -100,29 +156,29 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <button id="btn-delete-resume" className="btn btn-danger btn-sm" onClick={handleDeleteResume}>
-                <Trash2 size={14} /> Remove
+              <button className={styles.removeBtn} onClick={handleDeleteResume}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                Remove
               </button>
             </div>
           ) : (
             <div
-              className={styles.dropzone}
+              className={`${styles.dashedArea} ${isDragActive ? styles.dashedAreaActive : ''}`}
               onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                const f = e.dataTransfer.files[0]
-                if (f) { const dt = new DataTransfer(); dt.items.add(f); if (fileInputRef.current) { fileInputRef.current.files = dt.files; handleResumeUpload({ target: fileInputRef.current } as any) } }
-              }}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
             >
-              <Upload size={24} style={{ color: 'var(--text-muted)' }} />
-              <p>Click or drag PDF here</p>
-              <span className={styles.dropzoneHint}>Max 10 MB · PDF only</span>
+              <div className={styles.uploadIconWrap}>
+                <span className={`material-symbols-outlined ${styles.uploadIcon}`}>upload_file</span>
+              </div>
+              <p className={styles.uploadTitle}>Click or drag PDF here</p>
+              <span className={styles.uploadHint}>Max 10 MB · PDF only</span>
             </div>
           )}
           <input
             ref={fileInputRef}
-            id="input-resume-file"
             type="file"
             accept="application/pdf"
             style={{ display: 'none' }}
@@ -130,85 +186,108 @@ export default function ProfilePage() {
           />
         </section>
 
-        {/* ── Skills ────────────────────────────────── */}
-        <section className={`card ${styles.section}`}>
-          <div className={styles.sectionHead}>
-            <div className="flex items-center gap-2">
-              <Code2 size={16} style={{ color: 'var(--accent)' }} />
-              <h2>Skills</h2>
-            </div>
-            <span className={styles.count}>{skills.length}</span>
-          </div>
-
-          <form onSubmit={handleAddSkill} className={styles.addSkillForm}>
-            <input
-              id="input-new-skill"
-              className="input"
-              placeholder="Python, React, Docker…"
-              value={newSkill}
-              onChange={(e) => setNewSkill(e.target.value)}
-            />
-            <button id="btn-add-skill" type="submit" className="btn btn-primary btn-sm" disabled={!newSkill.trim()}>
-              <Plus size={14} /> Add
-            </button>
-          </form>
-
-          <div className={styles.skillCloud}>
-            {skills.map((s) => (
-              <div key={s.id} className={styles.skillTag}>
-                <span>{s.skill_name}</span>
-                <button
-                  id={`btn-del-skill-${s.id}`}
-                  className={styles.skillDel}
-                  onClick={() => deleteSkill(s.id).then(() => toast.success('Skill removed'))}
-                  title="Remove"
-                >
-                  <X size={11} />
-                </button>
+        {/* ── Skills Section ────────────────────────────────── */}
+        <section className={`${styles.md3Card} ${styles.skillsSection}`}>
+          <h2 className={styles.cardHeader}>
+            <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>psychology</span>
+            Skills
+          </h2>
+          
+          <div className={styles.skillsContainer}>
+            <form onSubmit={handleAddSkill} className="flex flex-col gap-3 w-full">
+              <div className={styles.skillInputWrap}>
+                <input
+                  className={styles.skillInput}
+                  placeholder="Python, React, Docker..."
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  type="text"
+                />
               </div>
-            ))}
-            {skills.length === 0 && (
-              <p className={styles.emptyHint}>Add your technical and soft skills</p>
-            )}
+              <button 
+                type="submit" 
+                className={`${styles.pillButton} ${styles.skillAddBtn}`} 
+                disabled={!newSkill.trim()}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+                Add
+              </button>
+            </form>
+
+            <div className={styles.skillTags}>
+              {skills.map((s) => (
+                <div key={s.id} className={styles.skillTag}>
+                  <span>{s.skill_name}</span>
+                  <span 
+                    className={`material-symbols-outlined ${styles.skillTagClose}`}
+                    onClick={() => deleteSkill(s.id).then(() => toast.success('Skill removed'))}
+                    title="Remove"
+                  >
+                    close
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* ── Projects ──────────────────────────────── */}
-        <section className={`card ${styles.section} ${styles.fullWidth}`}>
-          <div className={styles.sectionHead}>
-            <div className="flex items-center gap-2">
-              <Briefcase size={16} style={{ color: 'var(--accent)' }} />
-              <h2>Projects</h2>
-            </div>
-            <button
-              id="btn-show-add-project"
-              className="btn btn-secondary btn-sm"
+        {/* ── Projects Section ──────────────────────────────── */}
+        <section className={`${styles.md3Card} ${styles.projectsSection}`}>
+          <div className={styles.projectsHeader}>
+            <h2 className={styles.cardHeader}>
+              <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>folder_open</span>
+              Projects
+            </h2>
+            <button 
+              className={`${styles.pillButton} ${styles.addProjectBtn}`}
               onClick={() => setShowAddProj(!showAddProj)}
             >
-              <Plus size={14} /> Add Project
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+              Add Project
             </button>
           </div>
 
           {showAddProj && (
-            <form onSubmit={handleAddProject} className={`${styles.projForm} fade-in`}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="proj-title">Project Title *</label>
-                <input id="proj-title" className="input" placeholder="Interview Copilot" required
-                  value={projForm.title} onChange={(e) => setProjForm({ ...projForm, title: e.target.value })} />
+            <form onSubmit={handleAddProject} className={styles.projectForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel} htmlFor="proj-title">Project Title *</label>
+                <input 
+                  id="proj-title" 
+                  className={styles.skillInput} 
+                  placeholder="Privacy Display" 
+                  required
+                  value={projForm.title} 
+                  onChange={(e) => setProjForm({ ...projForm, title: e.target.value })} 
+                />
               </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="proj-desc">Description</label>
-                <textarea id="proj-desc" className="input" placeholder="What does this project do?"
-                  value={projForm.description} onChange={(e) => setProjForm({ ...projForm, description: e.target.value })} />
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel} htmlFor="proj-desc">Description</label>
+                <textarea 
+                  id="proj-desc" 
+                  className={styles.skillInput} 
+                  style={{ minHeight: '80px', borderRadius: '16px' }}
+                  placeholder="What does this project do?"
+                  value={projForm.description} 
+                  onChange={(e) => setProjForm({ ...projForm, description: e.target.value })} 
+                />
               </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="proj-tech">Technologies</label>
-                <input id="proj-tech" className="input" placeholder="Python, FastAPI, FAISS"
-                  value={projForm.technologies} onChange={(e) => setProjForm({ ...projForm, technologies: e.target.value })} />
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel} htmlFor="proj-tech">Technologies</label>
+                <input 
+                  id="proj-tech" 
+                  className={styles.skillInput} 
+                  placeholder="Python, FastAPI, FAISS"
+                  value={projForm.technologies} 
+                  onChange={(e) => setProjForm({ ...projForm, technologies: e.target.value })} 
+                />
               </div>
-              <div className="flex gap-2">
-                <button id="btn-save-project" type="submit" className="btn btn-primary">Save Project</button>
-                <button type="button" className="btn btn-ghost" onClick={() => setShowAddProj(false)}>Cancel</button>
+              <div className={styles.formActions}>
+                <button type="submit" className={`${styles.pillButton} ${styles.addProjectBtn}`}>
+                  Save Project
+                </button>
+                <button type="button" className={`${styles.pillButton} ${styles.cancelBtn}`} onClick={() => setShowAddProj(false)}>
+                  Cancel
+                </button>
               </div>
             </form>
           )}
@@ -223,18 +302,23 @@ export default function ProfilePage() {
                     <p className={styles.projTech}>{p.technologies}</p>
                   )}
                 </div>
-                <button
-                  id={`btn-del-project-${p.id}`}
-                  className="btn btn-ghost btn-icon btn-sm"
+                <button 
+                  className={styles.removeBtn} 
+                  style={{ padding: '8px', border: 'none' }}
                   onClick={() => deleteProject(p.id).then(() => toast.success('Project removed'))}
                   title="Delete project"
                 >
-                  <Trash2 size={14} />
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                 </button>
               </div>
             ))}
             {projects.length === 0 && !showAddProj && (
-              <p className={styles.emptyHint}>Add projects to improve retrieval quality</p>
+              <div className={styles.projectsEmpty}>
+                <span className={`material-symbols-outlined ${styles.projectsEmptyIcon}`}>auto_awesome</span>
+                <p className={styles.projectsEmptyText}>
+                  Add projects to improve retrieval quality. The AI will use these details to provide more accurate context during interviews.
+                </p>
+              </div>
             )}
           </div>
         </section>

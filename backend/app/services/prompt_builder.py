@@ -1,6 +1,7 @@
 """
 Prompt Builder — assembles the final Gemini prompt from retrieved context.
 """
+from typing import Sequence
 from app.schemas.interview import ChunkView
 
 SYSTEM_ROLE = "You are an expert interview coach helping a candidate craft the best possible answer."
@@ -65,3 +66,23 @@ def build_prompt(
         category=category,
         question=question,
     )
+
+
+def build_realtime_prompt(
+    question: str,
+    chunks: Sequence[ChunkView] | None = None,
+) -> str:
+    """
+    Build a lean context string for the real-time voice pipeline.
+    
+    Unlike build_prompt(), this returns ONLY a context injection string,
+    NOT a full prompt. The voice system prompt is handled by GeminiService
+    via the system_instruction field. This keeps the user message clean.
+    """
+    if not chunks:
+        return ""
+
+    lines = []
+    for i, chunk in enumerate(chunks[:4], 1):  # limit to 4 chunks for speed
+        lines.append(f"[{i}] {chunk.source}\n{chunk.text.strip()}")
+    return "\n\n".join(lines)

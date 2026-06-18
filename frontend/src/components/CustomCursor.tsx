@@ -45,7 +45,7 @@ export default function CustomCursor() {
         setActive(isElectron && nextProtect)
 
         if (isElectron && window.electronAPI) {
-          window.electronAPI.setContentProtection(nextProtect)
+          window.electronAPI?.setContentProtection(nextProtect)
         }
 
         // Notify other components and sync settings UI

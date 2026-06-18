@@ -22,7 +22,17 @@ class EmbedderService:
     def load(self) -> None:
         """Call this once during app lifespan startup."""
         from sentence_transformers import SentenceTransformer
-        self._model = SentenceTransformer(self._model_name)
+        import os
+        from app.core.config import get_settings
+        
+        settings = get_settings()
+        model_path = os.path.join(settings.MODEL_DIR, self._model_name)
+        if os.path.exists(model_path):
+            load_arg = model_path
+        else:
+            load_arg = self._model_name
+            
+        self._model = SentenceTransformer(load_arg, cache_folder=settings.MODEL_DIR)
 
     def _encode_sync(self, texts: list[str]) -> np.ndarray:
         if self._model is None:

@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ───────────────────────────────────────────────────────────────
-    logger.info("Starting up Real-Time AI Interview Copilot API")
+    logger.info("Starting up Real-Time AI Privacy Display API")
 
     # 1. Database initialization/migrations
     if settings.DATABASE_URL.startswith("sqlite"):
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
             logger.info("SQLite database tables created/verified")
         except Exception as e:
             logger.error("SQLite auto-creation failed", extra={"error": str(e)})
-    else:
+    elif settings.DATABASE_PROVIDER != "firestore":
         try:
             import subprocess
             backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -52,6 +52,17 @@ async def lifespan(app: FastAPI):
                 logger.info("Database migrations applied")
         except Exception as e:
             logger.error("Migration failed", extra={"error": str(e)})
+
+    # 1.5 Check and download local AI models if missing from AppData
+    try:
+        from app.services.model_manager import check_models, download_models
+        if not check_models():
+            logger.info("Local models missing. Downloading to AppData folder...")
+            download_models()
+        else:
+            logger.info("Local models verified in AppData folder.")
+    except Exception as e:
+        logger.error("Failed to check/download local models", extra={"error": str(e)})
 
     # 2. Initialize FAISS vector store
     from app.services.vector_store import init_vector_store
@@ -120,21 +131,30 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+from fastapi.responses import JSONResponse
+@app.exception_handler(ValueError)
+async def value_error_handler(request, exc):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)},
+    )
+
 # ── Routers ───────────────────────────────────────────────────────────────────
-from app.api.auth import router as auth_router, profile_router
+from app.api.profile import router as profile_router
 from app.api.resume import router as resume_router
 from app.api.projects import router as projects_router
 from app.api.skills import router as skills_router
 from app.api.interview import router as interview_router
 from app.api.audio import router as audio_router
+from app.api.realtime_ws import router as realtime_ws_router
 
-app.include_router(auth_router, prefix="/api")
 app.include_router(profile_router, prefix="/api")
 app.include_router(resume_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 app.include_router(skills_router, prefix="/api")
 app.include_router(interview_router, prefix="/api")
 app.include_router(audio_router, prefix="/api")
+app.include_router(realtime_ws_router, prefix="/api")
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────

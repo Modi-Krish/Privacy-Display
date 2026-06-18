@@ -2,101 +2,108 @@
   display: flex;
   height: 100vh;
   overflow: hidden;
+  background-color: #fdfbf7;
+  background-image: radial-gradient(#e5e0d8 1px, transparent 1px);
+  background-size: 24px 24px;
+  position: relative;
 }
 
-.sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 16px 12px;
-  gap: 4px;
-}
-
-.logo {
+.dock {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px 16px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 40px;
+  gap: 12px;
+  z-index: 1000;
+  
+  /* Glassmorphism effect */
+  background: rgba(253, 251, 247, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 
 .nav {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
 }
 
 .navItem {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 30px;
+  color: #555;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 1.05rem;
+  font-weight: 400;
   text-decoration: none;
   cursor: pointer;
-  border: none;
   background: transparent;
-  font-family: var(--font-sans);
-  width: 100%;
-  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navItem:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.7);
+  color: #2d2d2d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .navActive {
-  background: var(--accent-light);
-  color: var(--accent);
+  background: #2d2d2d;
+  color: #fdfbf7;
+  font-family: 'Kalam', cursive;
+  box-shadow: 0 4px 12px rgba(45, 45, 45, 0.2);
 }
 
 .navActive:hover {
-  background: var(--accent-light);
-  color: var(--accent-hover);
+  background: #ff4d4d;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
 }
 
 .stealthBtn {
-  margin-top: auto;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
-  margin-bottom: 6px;
-  font-size: 0.825rem;
+  margin-left: 8px;
+  background: rgba(229, 224, 216, 0.4);
+  border: 1px dashed rgba(45, 45, 45, 0.3);
+  font-size: 0.95rem;
+}
+
+.stealthBtn:hover {
+  background: #2d5da1;
+  color: #fff;
+  border-style: solid;
+  border-color: #2d5da1;
+  box-shadow: 0 4px 12px rgba(45, 93, 161, 0.3);
 }
 
 .stealthActive {
-  background: var(--accent-light);
-  border-color: rgba(124, 106, 247, 0.3);
-  color: var(--accent);
+  background: #2d5da1;
+  color: #fff;
+  border-style: solid;
+  border-color: #2d5da1;
+  box-shadow: 0 4px 12px rgba(45, 93, 161, 0.3);
 }
 
 .stealthActive:hover {
-  background: rgba(124, 106, 247, 0.18);
-  color: var(--accent-hover);
-}
-
-.logoutBtn {
-  color: var(--text-muted);
-}
-
-.logoutBtn:hover {
-  background: rgba(248, 81, 73, 0.1);
-  color: var(--danger);
+  background: #ff4d4d;
+  border-color: #ff4d4d;
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
 }
 
 .main {
   flex: 1;
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;

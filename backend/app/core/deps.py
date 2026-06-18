@@ -3,28 +3,25 @@ from uuid import UUID as PyUUID
 from fastapi import Depends, Request, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
-from app.core.security import decode_token, get_token_from_cookie, ACCESS_COOKIE
 from app.db.session import get_db
-from app.db.models import User
-
 
 async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db),
-) -> User:
-    token = get_token_from_cookie(request, ACCESS_COOKIE)
-    payload = decode_token(token, expected_type="access")
-    user_id: str = payload.get("sub")  # type: ignore[assignment]
-
-    result = await db.execute(select(User).where(User.id == PyUUID(user_id)))
-    user = result.scalar_one_or_none()
+) -> Any:
+    from app.services.db_service import get_db_service
+    db_service = get_db_service()
+    
+    email = "default@example.com"
+    user = await db_service.get_user_by_email(email, db=db)
+    if not user:
+        user = await db_service.create_user(email=email, password_hash="nopassword", db=db)
 
     if user is None or not user.is_active:
         from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive",
+            detail="Default user not found or inactive",
         )
     return user
 

@@ -37,11 +37,20 @@ class STTService:
     def _get_model(self, model_size: str):
         if model_size not in self._models:
             from faster_whisper import WhisperModel
-            logger.info("Loading Whisper model", extra={"model_size": model_size})
+            import os
+            
+            model_path = os.path.join(settings.MODEL_DIR, f"faster-whisper-{model_size}")
+            if os.path.exists(model_path):
+                load_arg = model_path
+            else:
+                load_arg = model_size
+                
+            logger.info("Loading Whisper model", extra={"model_size": model_size, "path": load_arg})
             self._models[model_size] = WhisperModel(
-                model_size,
+                load_arg,
                 device=self._device,
                 compute_type=self._compute_type,
+                download_root=settings.MODEL_DIR
             )
         return self._models[model_size]
 

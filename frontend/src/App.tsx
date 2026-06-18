@@ -1,47 +1,46 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { useAuthStore } from '@/store/authStore'
-import AuthPage    from '@/pages/AuthPage'
 import ProfilePage from '@/pages/ProfilePage'
 import InterviewPage from '@/pages/InterviewPage'
 import SettingsPage from '@/pages/SettingsPage'
 import BrowserPage  from '@/pages/BrowserPage'
 import AppShell    from '@/components/AppShell'
 import CustomCursor from '@/components/CustomCursor'
+import TitleBar from '@/components/TitleBar'
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore((s) => s.user)
-  const isInitialized = useAuthStore((s) => s.isInitialized)
-
-  // Don't redirect until we've checked the session
-  if (!isInitialized) return null
-
-  if (!user) return <Navigate to="/login" replace />
-  return <>{children}</>
-}
+import OverlayPage from '@/pages/OverlayPage'
 
 export default function App() {
-  const fetchMe = useAuthStore((s) => s.fetchMe)
-
   useEffect(() => {
-    fetchMe()
-    
     // Apply screen protection and taskbar settings on startup if in Electron
     const isElectron = window.electronAPI !== undefined
     if (isElectron && window.electronAPI) {
       const screenProtect = localStorage.getItem('screen_protection') === 'true'
       if (screenProtect) {
-        window.electronAPI.setContentProtection(true)
+        window.electronAPI?.setContentProtection(true)
       }
       const skipTaskbar = localStorage.getItem('skip_taskbar') === 'true'
       if (skipTaskbar) {
-        window.electronAPI.setSkipTaskbar(true)
+        window.electronAPI?.setSkipTaskbar(true)
       }
     }
     // Update dynamic privacy settings listeners
     window.dispatchEvent(new Event('screen-protection-changed'))
   }, [])
+
+  const isElectron = window.electronAPI !== undefined
+
+  // Detect if we're in the overlay window (loaded with #/overlay hash)
+  const isOverlay = window.location.hash.startsWith('#/overlay')
+
+  useEffect(() => {
+    if (isOverlay) {
+      document.body.classList.add('is-overlay')
+    } else {
+      document.body.classList.remove('is-overlay')
+    }
+  }, [isOverlay])
 
   return (
     <>
@@ -49,29 +48,34 @@ export default function App() {
         position="top-right"
         toastOptions={{
           style: {
-            background: 'var(--bg-elevated)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border)',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '0.875rem',
+            background: '#fff',
+            color: '#2d2d2d',
+            border: '2px solid #2d2d2d',
+            fontFamily: "'Patrick Hand', cursive",
+            fontSize: '0.95rem',
+            boxShadow: '4px 4px 0px 0px #2d2d2d',
+            borderRadius: '8px 24px 10px 20px / 20px 10px 24px 8px',
           },
         }}
       />
-      <CustomCursor />
-      <BrowserRouter>
+      {!isOverlay && <CustomCursor />}
+      {isElectron && !isOverlay && <TitleBar />}
+      <HashRouter>
         <Routes>
-          <Route path="/login"    element={<AuthPage />} />
-          <Route path="/register" element={<AuthPage mode="register" />} />
-          <Route element={<RequireAuth><AppShell /></RequireAuth>}>
+          {/* Overlay route — no AppShell wrapper */}
+          <Route path="/overlay" element={<OverlayPage />} />
+
+          {/* Main app routes */}
+          <Route element={<AppShell />}>
             <Route index element={<Navigate to="/interview" replace />} />
             <Route path="/interview" element={<InterviewPage />} />
             <Route path="/profile"   element={<ProfilePage />} />
-            <Route path="/browser"   element={<BrowserPage />} />
+            <Route path="/browser"   element={<></>} />
             <Route path="/settings"  element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </>
   )
 }

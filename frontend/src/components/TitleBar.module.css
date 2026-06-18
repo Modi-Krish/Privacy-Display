@@ -1,0 +1,82 @@
+.titleBar {
+  height: 32px;
+  width: 100%;
+  background: #fdfbf7;
+  border-bottom: 2px dashed rgba(45, 45, 45, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 9999;
+  user-select: none;
+}
+
+/* App Name */
+.appName {
+  position: relative;
+  z-index: 1;
+  padding-left: 12px;
+  font-family: 'Patrick Hand', 'Kalam', cursive, sans-serif;
+  font-size: 15px;
+  color: #2d2d2d;
+  pointer-events: none; /* Let drag pass through */
+}
+
+/* The draggable region covers the whole bar but sits behind controls */
+.dragRegion {
+  position: absolute;
+  inset: 0;
+  -webkit-app-region: drag;
+}
+
+/* Controls sit on top of drag region */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  position: relative;
+  z-index: 1;
+  -webkit-app-region: no-drag;
+}
+
+.btn {
+  width: 30px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #888;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.btn:hover { background: #e5e0d8; color: #2d2d2d; }
+
+/* Minimize — horizontal line */
+.line {
+  display: block;
+  width: 10px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+/* Maximize — hollow square */
+.square {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border: 2px solid currentColor;
+  border-radius: 1px;
+}
+
+/* Close — red on hover */
+.close:hover {
+  background: #ff4d4d;
+  color: #fff;
+}

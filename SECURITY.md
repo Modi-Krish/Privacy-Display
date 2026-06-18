@@ -1,6 +1,6 @@
 # Security Policy
 
-We take the security of the **Real-Time AI Interview Copilot (REAI)** seriously. This document outlines our supported versions, reporting processes, and threat model guidelines to protect user data and systems.
+We take the security of the **Real-Time AI Privacy Display (REAI)** seriously. This document outlines our supported versions, reporting processes, and threat model guidelines to protect user data and systems.
 
 ---
 
@@ -30,7 +30,7 @@ REAI is built with a **security-first local design** to minimize threat exposure
 If you identify a security vulnerability in this project, **please do not open a public issue or pull request**. Public disclosure risks exposing active systems before they can be secured.
 
 ### Reporting Channels
-Please submit all security disclosures by emailing **`security@reai-copilot.org`** (or contact the lead maintainer directly). 
+Please submit all security disclosures by emailing **`security@privacy-display.org`** (or contact the lead maintainer directly). 
 
 To help us triage the issue quickly, please include:
 - **Impact Description**: A summary of what an attacker could accomplish (e.g. CSRF, token leaks, local privilege escalation).

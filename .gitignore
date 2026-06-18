@@ -73,6 +73,10 @@ htmlcov/
 .coverage
 
 # ── AI / ML Models & Local Index Cache ────────────────────────────────────────
+models/
+cache/
+logs/
+temp/
 *.pt
 *.pth
 *.h5
@@ -81,3 +85,5 @@ htmlcov/
 *.index
 *.meta.json
 faiss_indices/
+
+firebase_service_account.json

@@ -4,6 +4,7 @@ import electron from 'vite-plugin-electron'
 import { resolve } from 'path'
 
 export default defineConfig({
+  envDir: '../',
   plugins: [
     react(),
     electron([
@@ -33,6 +34,7 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true,
+        ws: true,  // enable WebSocket proxying for /api/ws/realtime
       },
     },
   },

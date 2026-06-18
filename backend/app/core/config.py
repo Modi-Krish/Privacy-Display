@@ -2,22 +2,30 @@ from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
+import sys
+import os
+
+def get_env_path():
+    if getattr(sys, "frozen", False):
+        return os.path.join(sys._MEIPASS, ".env")
+    return ".env"
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=get_env_path(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
 
     # ── Application ───────────────────────────────────────────────────────────
-    APP_NAME: str = "Real-Time AI Interview Copilot"
+    APP_NAME: str = "Real-Time AI Privacy Display"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://reai:reai@db:5432/reai"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/reai.db"
+    DATABASE_PROVIDER: str = "sqlite"  # 'sqlite' or 'firestore'
 
     # ── Auth ──────────────────────────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production-use-256-bit-random-string"
@@ -25,6 +33,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     COOKIE_SECURE: bool = False  # Set dynamically in model_validator if not explicitly provided
+    FIREBASE_SERVICE_ACCOUNT_JSON: str | None = None
+    FIREBASE_WEB_API_KEY: str | None = None
 
     # ── Gemini ────────────────────────────────────────────────────────────────
     GEMINI_API_KEY: str = ""
@@ -41,6 +51,7 @@ class Settings(BaseSettings):
 
     # ── FAISS ─────────────────────────────────────────────────────────────────
     FAISS_INDEX_PATH: str = "./data/faiss_indices"
+    MODEL_DIR: str = ""
 
     # ── RAG ───────────────────────────────────────────────────────────────────
     RETRIEVAL_TOP_K: int = 5
@@ -55,15 +66,46 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "app://.", "file://"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "app://.", "file://", "null"]
 
     @model_validator(mode="after")
     def validate_chunk_settings(self) -> "Settings":
+        import os
+        import sys
+
         if self.CHUNK_OVERLAP >= self.CHUNK_SIZE:
             raise ValueError("CHUNK_OVERLAP must be less than CHUNK_SIZE to prevent infinite loops during chunking.")
         # If COOKIE_SECURE is not explicitly set, default to True in production (not DEBUG)
         if "COOKIE_SECURE" not in self.model_fields_set:
             self.COOKIE_SECURE = not self.DEBUG
+        
+        # Determine base user directory
+        is_frozen = getattr(sys, "frozen", False)
+        appdata = os.getenv("APPDATA")
+        if not appdata:
+            appdata = os.path.expanduser("~/Library/Application Support" if sys.platform == "darwin" else "~/.local/share")
+            
+        reai_user_dir = os.path.join(appdata, "REAI")
+        
+        # Dynamic paths when packaged/frozen
+        if is_frozen:
+            # Re-route database path to writeable AppData folder
+            if self.DATABASE_URL.startswith("sqlite+aiosqlite:///./data"):
+                db_dir = os.path.join(reai_user_dir, "data")
+                self.DATABASE_URL = f"sqlite+aiosqlite:///{db_dir}/reai.db"
+            
+            # Re-route FAISS index path to writeable AppData folder
+            if self.FAISS_INDEX_PATH == "./data/faiss_indices":
+                self.FAISS_INDEX_PATH = os.path.join(reai_user_dir, "faiss_indices")
+                
+            # Resolve Firebase Service Account JSON relative to PyInstaller _internal dir
+            if self.FIREBASE_SERVICE_ACCOUNT_JSON and not os.path.isabs(self.FIREBASE_SERVICE_ACCOUNT_JSON):
+                self.FIREBASE_SERVICE_ACCOUNT_JSON = os.path.join(sys._MEIPASS, self.FIREBASE_SERVICE_ACCOUNT_JSON)
+
+        # Determine AppData model directory
+        if not self.MODEL_DIR:
+            self.MODEL_DIR = os.path.join(reai_user_dir, "models")
+            
         return self
 
 

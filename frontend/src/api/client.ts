@@ -29,54 +29,101 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ── Response interceptor: silent JWT refresh on 401 ──────────────────────────
-let isRefreshing = false
-let refreshQueue: Array<(ok: boolean) => void> = []
 
-// URLs that should NEVER trigger a token refresh attempt
-const AUTH_BYPASS = ['/auth/refresh', '/auth/login', '/auth/register', '/auth/me']
 
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config
-    const url: string = originalRequest?.url || ''
+export const getApiUrl = () => API_URL
 
-    const shouldBypass = AUTH_BYPASS.some((path) => url.includes(path))
+export interface StreamCallbacks {
+  onInfo?: (data: any) => void
+  onToken?: (token: string) => void
+  onDone?: (data: any) => void
+  onError?: (err: string) => void
+}
 
-    if (error.response?.status === 401 && !originalRequest._retry && !shouldBypass) {
-      originalRequest._retry = true
+export async function streamPost(
+  path: string,
+  body: any,
+  callbacks: StreamCallbacks
+): Promise<void> {
+  const apiKey = localStorage.getItem('gemini_api_key') || ''
+  const model = localStorage.getItem('gemini_model') || ''
+  const whisperSize = localStorage.getItem('whisper_size') || ''
 
-      if (isRefreshing) {
-        // Queue this request until refresh completes
-        return new Promise((resolve, reject) => {
-          refreshQueue.push((ok) => {
-            if (ok) resolve(api(originalRequest))
-            else reject(error)
-          })
-        })
-      }
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
 
-      isRefreshing = true
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Gemini-API-Key': apiKey,
+        'X-Gemini-Model': model,
+        'X-Whisper-Model-Size': whisperSize,
+      },
+      body: JSON.stringify(body),
+      credentials: 'include',
+      signal: controller.signal,
+    })
+    
+    clearTimeout(timeoutId)
 
-      try {
-        await api.post('/api/auth/refresh')
-        refreshQueue.forEach((cb) => cb(true))
-        refreshQueue = []
-        isRefreshing = false
-        return api(originalRequest)
-      } catch {
-        // Refresh failed — clear queue and let the store handle redirect
-        refreshQueue.forEach((cb) => cb(false))
-        refreshQueue = []
-        isRefreshing = false
-        // Dynamically import store to avoid circular deps — clears user without page reload
-        import('@/store/authStore').then(({ useAuthStore }) => {
-          useAuthStore.getState().logout()
-        })
-      }
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}))
+      throw new Error(errJson.detail || `HTTP error! Status: ${response.status}`)
     }
 
-    return Promise.reject(error)
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('Response body reader not available')
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+
+        if (trimmed.startsWith('data: ')) {
+          const rawData = trimmed.slice(6)
+          if (rawData === '[DONE]') {
+            continue
+          }
+
+          try {
+            const parsed = JSON.parse(rawData)
+            if (parsed.event === 'info' && callbacks.onInfo) {
+              callbacks.onInfo(parsed.data)
+            } else if (parsed.event === 'token' && callbacks.onToken) {
+              callbacks.onToken(parsed.data)
+            } else if (parsed.event === 'done' && callbacks.onDone) {
+              callbacks.onDone(parsed.data)
+            } else if (parsed.event === 'error' && callbacks.onError) {
+              callbacks.onError(parsed.detail || 'Stream error')
+            }
+          } catch (e) {
+            console.error('Failed to parse stream line:', trimmed, e)
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    clearTimeout(timeoutId)
+    const errorMsg = err.name === 'AbortError' 
+      ? 'Request timed out (backend is unresponsive)' 
+      : (err.message || 'Stream connection failed')
+      
+    if (callbacks.onError) {
+      callbacks.onError(errorMsg)
+    } else {
+      throw new Error(errorMsg)
+    }
   }
-)
+}
