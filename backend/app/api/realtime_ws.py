@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/ws", tags=["realtime"])
 
 # ── Minimum transcript length before triggering Gemini ─────────────────────
-MIN_TRIGGER_WORDS = 3
+MIN_TRIGGER_WORDS = 2
 
 # ── How much transcript change triggers a Gemini restart ───────────────────
 # If new transcript adds N+ words compared to what was sent to Gemini, restart.

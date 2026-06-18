@@ -25,9 +25,9 @@ logger = get_logger(__name__)
 SAMPLE_RATE = 16_000          # Hz — must match AudioWorklet output
 BYTES_PER_SAMPLE = 2          # 16-bit PCM
 BUFFER_SECONDS = 2.5          # rolling window fed to Whisper
-TRANSCRIBE_INTERVAL = 0.5     # seconds between Whisper runs
+TRANSCRIBE_INTERVAL = 0.3     # seconds between Whisper runs
 SILENCE_ENERGY_THRESHOLD = 0.003   # RMS below this = silence
-SILENCE_DURATION_TRIGGER = 0.5     # seconds of silence to signal end-of-utterance
+SILENCE_DURATION_TRIGGER = 0.4     # seconds of silence to signal end-of-utterance
 
 # ── Question detection keywords ───────────────────────────────────────────────
 QUESTION_KEYWORDS = frozenset([
