@@ -92,12 +92,11 @@ Create a `.env` file in the root directory from the `.env.example` template:
 | `FAISS_INDEX_PATH` | `./data/faiss_indices` | Target output folder for vector databases. |
 | `RATE_LIMIT_PER_MINUTE` | `60` | Limit requests per client ip. |
 
+**Important:** You also need to generate a Firebase Admin SDK private key and place it in the `backend/` directory as `firebase_service_account.json`. This is required for Firebase services to function properly.
+
 ---
 
 ## 🚀 Installation & Deployment
-
-### Option 1: Quick Start with Docker (Recommended)
-This method launches both the database and the backend service in containerized environments.
 
 1. Clone and enter directory:
    ```bash
@@ -108,20 +107,9 @@ This method launches both the database and the backend service in containerized 
    ```bash
    cp .env.example .env
    # Add your Google Gemini API key inside .env or set it dynamically in the settings UI.
-   ```
-3. Boot compose stack:
-   ```bash
-   docker compose up --build -d
-   ```
-4. Setup and run the Desktop Application:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev:electron
+   # Ensure you place your firebase_service_account.json in the backend directory.
    ```
 
-### Option 2: Local Native Execution
-For local development, hot-reloading, or executing with custom GPU acceleration configurations.
 
 #### Backend Setup:
 1. Initialize virtual environment:
