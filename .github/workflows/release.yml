@@ -33,6 +33,8 @@ jobs:
       - name: Build Python Backend Executable
         run: |
           cd backend
+          echo "" > .env
+          echo "{}" > firebase_service_account.json
           pyinstaller reai-backend.spec
 
       # ── 2. Setup Frontend (Node/Electron) ──
