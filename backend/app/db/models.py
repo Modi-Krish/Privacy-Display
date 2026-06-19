@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean, Column, DateTime, Float, ForeignKey,
-    String, Text, UniqueConstraint, Uuid,
+    Integer, String, Text, UniqueConstraint, Uuid,
 )
 from sqlalchemy.orm import relationship
 
@@ -147,3 +147,45 @@ class Response(Base):
     generated_prompt = Column(Text, nullable=True)
 
     question = relationship("Question", back_populates="response")
+
+
+# ── Auth & Devices ────────────────────────────────────────────────────────────
+
+class Device(Base):
+    __tablename__ = "devices"
+
+    id          = Column(Uuid, primary_key=True, default=_uuid)
+    user_id     = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id   = Column(String(255), nullable=False, unique=True, index=True)
+    device_name = Column(String(255), nullable=True)
+    created_at  = Column(DateTime(timezone=True), default=_now, nullable=False)
+    last_seen   = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User")
+
+
+class PairingCode(Base):
+    __tablename__ = "pairing_codes"
+
+    id         = Column(Uuid, primary_key=True, default=_uuid)
+    user_id    = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    code       = Column(String(20), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used       = Column(Boolean, default=False, nullable=False)
+    attempts   = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
+
+    user = relationship("User")
+
+
+class Session(Base):
+    __tablename__ = "sessions"
+
+    id                 = Column(Uuid, primary_key=True, default=_uuid)
+    user_id            = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id          = Column(String(255), nullable=False, index=True)
+    refresh_token_hash = Column(Text, nullable=False)
+    expires_at         = Column(DateTime(timezone=True), nullable=False)
+    created_at         = Column(DateTime(timezone=True), default=_now, nullable=False)
+
+    user = relationship("User")

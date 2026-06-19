@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { Mic2, User, Settings, Globe, Shield, ShieldOff } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -19,11 +20,33 @@ export default function AppShell() {
   const isElectron = window.electronAPI !== undefined
 
   const { stealthActive, toggleStealth } = useSettingsStore()
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (window.electronAPI?.auth) {
+        const tokens = await window.electronAPI.auth.getTokens()
+        if (!tokens || !tokens.access_token) {
+          navigate('/auth', { replace: true })
+        } else {
+          setIsAuthenticated(true)
+        }
+      } else {
+        // Fallback for non-electron dev mode
+        setIsAuthenticated(true)
+      }
+    }
+    checkAuth()
+  }, [navigate])
 
   const handleToggleStealth = () => {
     const nextState = !stealthActive
     toggleStealth(nextState)
     toast.success(nextState ? 'Stealth Mouse Enabled!' : 'Normal Mouse Enabled!')
+  }
+
+  if (isAuthenticated === null) {
+    return null // or a loading spinner
   }
 
   return (

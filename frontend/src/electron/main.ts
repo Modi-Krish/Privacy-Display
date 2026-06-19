@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, globalShortcut, screen, BrowserView } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, globalShortcut, screen, BrowserView, safeStorage } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { spawn, ChildProcess } from 'child_process'
@@ -404,4 +404,48 @@ ipcMain.on('browser-go-forward', (event, id: string) => {
 ipcMain.on('browser-reload', (event, id: string) => {
   const view = browserViews.get(id)
   if (view) view.webContents.reload()
+})
+
+// ── Auth Token Storage ───────────────────────────────────────────────────────
+
+const AUTH_FILE = path.join(app.getPath('userData'), 'auth.json')
+
+ipcMain.handle('auth-set-tokens', (event, tokens: { access_token: string, refresh_token: string, user_id: string }) => {
+  try {
+    const dataStr = JSON.stringify(tokens)
+    if (!safeStorage.isEncryptionAvailable()) {
+      fs.writeFileSync(AUTH_FILE, dataStr, 'utf-8')
+      return true
+    }
+    const encrypted = safeStorage.encryptString(dataStr)
+    fs.writeFileSync(AUTH_FILE, encrypted)
+    return true
+  } catch (err) {
+    console.error('Failed to save tokens:', err)
+    return false
+  }
+})
+
+ipcMain.handle('auth-get-tokens', (event) => {
+  try {
+    if (!fs.existsSync(AUTH_FILE)) return null
+    const data = fs.readFileSync(AUTH_FILE)
+    if (!safeStorage.isEncryptionAvailable()) {
+      return JSON.parse(data.toString('utf-8'))
+    }
+    const decrypted = safeStorage.decryptString(data)
+    return JSON.parse(decrypted)
+  } catch (err) {
+    console.error('Failed to read tokens:', err)
+    return null
+  }
+})
+
+ipcMain.handle('auth-clear-tokens', (event) => {
+  try {
+    if (fs.existsSync(AUTH_FILE)) fs.unlinkSync(AUTH_FILE)
+    return true
+  } catch (err) {
+    return false
+  }
 })

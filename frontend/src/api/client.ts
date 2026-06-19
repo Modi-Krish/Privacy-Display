@@ -8,25 +8,95 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// ── Request interceptor: inject local user settings headers ───────────────────
+let isRefreshing = false
+let failedQueue: Array<{resolve: (value?: unknown) => void, reject: (reason?: any) => void}> = []
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  failedQueue = []
+}
+
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const apiKey = localStorage.getItem('gemini_api_key')
     const model = localStorage.getItem('gemini_model')
     const whisperSize = localStorage.getItem('whisper_size')
 
-    if (apiKey) {
-      config.headers['X-Gemini-API-Key'] = apiKey
+    if (apiKey) config.headers['X-Gemini-API-Key'] = apiKey
+    if (model) config.headers['X-Gemini-Model'] = model
+    if (whisperSize) config.headers['X-Whisper-Model-Size'] = whisperSize
+
+    // Inject JWT Token
+    if (window.electronAPI?.auth) {
+      const tokens = await window.electronAPI.auth.getTokens()
+      if (tokens?.access_token) {
+        config.headers['Authorization'] = `Bearer ${tokens.access_token}`
+      }
     }
-    if (model) {
-      config.headers['X-Gemini-Model'] = model
-    }
-    if (whisperSize) {
-      config.headers['X-Whisper-Model-Size'] = whisperSize
-    }
+    
     return config
   },
   (error) => Promise.reject(error)
+)
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+    
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token
+          return api(originalRequest)
+        }).catch(err => Promise.reject(err))
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      try {
+        if (!window.electronAPI?.auth) throw new Error('No electron API')
+        const tokens = await window.electronAPI.auth.getTokens()
+        if (!tokens?.refresh_token) throw new Error('No refresh token')
+        
+        const { data } = await axios.post(`${API_URL}/api/auth/desktop/refresh`, {
+          refresh_token: tokens.refresh_token
+        })
+        
+        await window.electronAPI.auth.setTokens({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          user_id: tokens.user_id
+        })
+        
+        api.defaults.headers.common['Authorization'] = 'Bearer ' + data.access_token
+        originalRequest.headers['Authorization'] = 'Bearer ' + data.access_token
+        
+        processQueue(null, data.access_token)
+        return api(originalRequest)
+      } catch (refreshError) {
+        processQueue(refreshError, null)
+        if (window.electronAPI?.auth) {
+          await window.electronAPI.auth.clearTokens()
+          // Optional: redirect to login
+          window.location.hash = '#/auth'
+        }
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
+    }
+    return Promise.reject(error)
+  }
 )
 
 

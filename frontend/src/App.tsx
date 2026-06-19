@@ -9,6 +9,7 @@ import AppShell    from '@/components/AppShell'
 import CustomCursor from '@/components/CustomCursor'
 import TitleBar from '@/components/TitleBar'
 
+import AuthPage from '@/pages/AuthPage'
 import OverlayPage from '@/pages/OverlayPage'
 
 export default function App() {
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/overlay" element={<OverlayPage />} />
 
           {/* Main app routes */}
+          <Route path="/auth" element={<AuthPage />} />
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/interview" replace />} />
             <Route path="/interview" element={<InterviewPage />} />

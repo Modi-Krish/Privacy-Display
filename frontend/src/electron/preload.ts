@@ -35,6 +35,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('overlay-mode-changed')
     ipcRenderer.on('overlay-mode-changed', (_event, isClickThrough) => callback(isClickThrough))
   },
+  
+  // ── Auth APIs ────────────────────────────────────────────────────────
+  auth: {
+    setTokens: (tokens: { access_token: string, refresh_token: string, user_id: string }) => ipcRenderer.invoke('auth-set-tokens', tokens),
+    getTokens: () => ipcRenderer.invoke('auth-get-tokens'),
+    clearTokens: () => ipcRenderer.invoke('auth-clear-tokens'),
+  },
 })
 
 export type ElectronAPI = {
@@ -59,4 +66,11 @@ export type ElectronAPI = {
   // Overlay
   toggleOverlayClickThrough: () => void
   onOverlayModeChanged: (callback: (isClickThrough: boolean) => void) => void
+
+  // Auth
+  auth: {
+    setTokens: (tokens: { access_token: string, refresh_token: string, user_id: string }) => Promise<boolean>
+    getTokens: () => Promise<{ access_token: string, refresh_token: string, user_id: string } | null>
+    clearTokens: () => Promise<boolean>
+  }
 }

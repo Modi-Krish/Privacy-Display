@@ -64,6 +64,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Failed to check/download local models", extra={"error": str(e)})
 
+    # 1.6 Initialize Firebase Admin (Required for Auth)
+    if settings.FIREBASE_SERVICE_ACCOUNT_JSON and os.path.exists(settings.FIREBASE_SERVICE_ACCOUNT_JSON):
+        import firebase_admin
+        from firebase_admin import credentials
+        try:
+            if not firebase_admin._apps:
+                cred = credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT_JSON)
+                firebase_admin.initialize_app(cred)
+                logger.info("Firebase Admin initialized for Auth")
+        except Exception as e:
+            logger.error("Failed to initialize Firebase Admin", extra={"error": str(e)})
+    else:
+        logger.warning("FIREBASE_SERVICE_ACCOUNT_JSON not found. Firebase Auth will fail.")
+
     # 2. Initialize FAISS vector store
     from app.services.vector_store import init_vector_store
     init_vector_store(settings.FAISS_INDEX_PATH, settings.EMBEDDING_DIM)
@@ -147,7 +161,9 @@ from app.api.skills import router as skills_router
 from app.api.interview import router as interview_router
 from app.api.audio import router as audio_router
 from app.api.realtime_ws import router as realtime_ws_router
+from app.api.auth import router as auth_router
 
+app.include_router(auth_router, prefix="/api")
 app.include_router(profile_router, prefix="/api")
 app.include_router(resume_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")

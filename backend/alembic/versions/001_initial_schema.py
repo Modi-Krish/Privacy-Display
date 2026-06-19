@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.Text, nullable=False),
         sa.Column("is_active", sa.Boolean, nullable=False, server_default="true"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
+                  server_default=sa.text("(CURRENT_TIMESTAMP)")),
     )
     op.create_index("ix_users_email", "users", ["email"], unique=True)
 
@@ -47,7 +47,7 @@ def upgrade() -> None:
         sa.Column("file_name", sa.String(255), nullable=False),
         sa.Column("extracted_text", sa.Text, nullable=True),
         sa.Column("uploaded_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
+                  server_default=sa.text("(CURRENT_TIMESTAMP)")),
     )
 
     # ── projects ───────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ def upgrade() -> None:
         sa.Column("user_id", UUID(as_uuid=True),
                   sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
+                  server_default=sa.text("(CURRENT_TIMESTAMP)")),
         sa.Column("ended_at", sa.DateTime(timezone=True), nullable=True),
     )
 
@@ -92,7 +92,7 @@ def upgrade() -> None:
         sa.Column("question_text", sa.Text, nullable=False),
         sa.Column("category", sa.String(50), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text("now()")),
+                  server_default=sa.text("(CURRENT_TIMESTAMP)")),
     )
 
     # ── responses ──────────────────────────────────────────────────────────

@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "app://.", "file://", "null"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001", "app://.", "file://", "null"]
 
     @model_validator(mode="after")
     def validate_chunk_settings(self) -> "Settings":

@@ -22,6 +22,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
+# ── Pairing Codes ─────────────────────────────────────────────────────────────
+
+def generate_pairing_code() -> str:
+    import secrets
+    # Generate a secure 6-digit code
+    return "".join(str(secrets.randbelow(10)) for _ in range(6))
+
+
 # ── JWT ───────────────────────────────────────────────────────────────────────
 
 def _create_token(data: dict[str, Any], expires_delta: timedelta) -> str:

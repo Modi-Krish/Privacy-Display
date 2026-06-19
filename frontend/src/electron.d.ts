@@ -6,6 +6,11 @@ interface Window {
     minimizeWindow: () => void
     maximizeWindow: () => void
     closeWindow: () => void
+    auth?: {
+      setTokens: (tokens: { access_token: string, refresh_token: string, user_id: string }) => Promise<boolean>
+      getTokens: () => Promise<{ access_token: string, refresh_token: string, user_id: string } | null>
+      clearTokens: () => Promise<boolean>
+    }
 
     // Browser tab management
     createTab: (id: string, url: string) => void
