@@ -18,7 +18,7 @@ type TabInfo = {
   url: string;
 }
 
-export default function BrowserPage() {
+export default function BrowserPage({ isOverlay = false }: { isOverlay?: boolean }) {
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
   const [tabs, setTabs] = useState<TabInfo[]>([
@@ -167,7 +167,7 @@ export default function BrowserPage() {
           <div className={styles.topRow}>
             {/* Left: App Name & Navigation Controls */}
             <div className={styles.leftSection}>
-              <h2 className={styles.appName}>ReAI Browser</h2>
+              {!isOverlay && <h2 className={styles.appName}>ReAI Browser</h2>}
               <div className={styles.navControls}>
                 <button className={styles.navButton} onClick={handleBack} title="Back">
                   <span className="material-symbols-outlined">arrow_back</span>
@@ -200,43 +200,45 @@ export default function BrowserPage() {
             </div>
 
             {/* Right: Navigation / Menu */}
-            <div className={styles.rightSection}>
-              <nav className={styles.topNav}>
-                {NAV.map(({ to, icon: Icon, label }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    role="tab"
-                    aria-label={`Navigate to ${label}`}
-                    className={({ isActive }) =>
-                      `${styles.topNavItem} ${isActive ? styles.topNavActive : ''}`
-                    }
-                  >
-                    <Icon size={16} strokeWidth={2.5} />
-                    <span>{label}</span>
-                  </NavLink>
-                ))}
-                
-                {isElectron && (
-                  <button
-                    className={`${styles.topNavItem} ${styles.stealthBtn} ${stealthActive ? styles.stealthActive : ''}`}
-                    onClick={handleToggleStealth}
-                    title="Toggle Stealth Mode (Ctrl+Shift+A+S)"
-                  >
-                    {stealthActive ? (
-                      <Shield size={16} strokeWidth={2.5} />
-                    ) : (
-                      <ShieldOff size={16} strokeWidth={2.5} />
-                    )}
-                    <span>{stealthActive ? 'Stealth Active' : 'Stealth Off'}</span>
+            {!isOverlay && (
+              <div className={styles.rightSection}>
+                <nav className={styles.topNav}>
+                  {NAV.map(({ to, icon: Icon, label }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      role="tab"
+                      aria-label={`Navigate to ${label}`}
+                      className={({ isActive }) =>
+                        `${styles.topNavItem} ${isActive ? styles.topNavActive : ''}`
+                      }
+                    >
+                      <Icon size={16} strokeWidth={2.5} />
+                      <span>{label}</span>
+                    </NavLink>
+                  ))}
+                  
+                  {isElectron && (
+                    <button
+                      className={`${styles.topNavItem} ${styles.stealthBtn} ${stealthActive ? styles.stealthActive : ''}`}
+                      onClick={handleToggleStealth}
+                      title="Toggle Stealth Mode (Ctrl+Shift+A+S)"
+                    >
+                      {stealthActive ? (
+                        <Shield size={16} strokeWidth={2.5} />
+                      ) : (
+                        <ShieldOff size={16} strokeWidth={2.5} />
+                      )}
+                      <span>{stealthActive ? 'Stealth Active' : 'Stealth Off'}</span>
+                    </button>
+                  )}
+                  
+                  <button className={`${styles.navButton} ${styles.moreBtn}`}>
+                    <span className="material-symbols-outlined">more_vert</span>
                   </button>
-                )}
-                
-                <button className={`${styles.navButton} ${styles.moreBtn}`}>
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-              </nav>
-            </div>
+                </nav>
+              </div>
+            )}
           </div>
 
           {/* Tab Row */}

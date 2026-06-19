@@ -204,29 +204,7 @@ async def stream_question_pipeline(
     if stream_error and not tokens:
         raise stream_error
 
-    # Split first line
-    full_text = "".join(tokens)
-    tokens_consumed_count = len(tokens)
-
-    if "\n" in full_text:
-        first_line, remaining_text = full_text.split("\n", 1)
-        first_line = first_line + "\n"
-    else:
-        first_line = full_text
-        remaining_text = ""
-
-    # Yield first line
-    yield {
-        "event": "token",
-        "data": first_line
-    }
-
-    # Yield remaining text accumulated so far
-    if remaining_text:
-        yield {
-            "event": "token",
-            "data": remaining_text
-        }
+    tokens_consumed_count = 0
 
     # Stream any new incoming tokens immediately
     while not stream_done:
