@@ -43,10 +43,12 @@ async def lifespan(app: FastAPI):
             logger.critical("Default ENCRYPTION_KEY configured in production mode!")
             raise RuntimeError("Production startup failed: Insecure ENCRYPTION_KEY configuration.")
             
-        from app.services.firebase_admin_service import _initialized as fb_initialized
-        if not fb_initialized:
-            logger.critical("Firebase Admin is not initialized! Firebase authentication will fail in production.")
-            raise RuntimeError("Production startup failed: Firebase Admin configuration missing.")
+        import sys
+        if not getattr(sys, "frozen", False):
+            from app.services.firebase_admin_service import _initialized as fb_initialized
+            if not fb_initialized:
+                logger.critical("Firebase Admin is not initialized! Firebase authentication will fail in production.")
+                raise RuntimeError("Production startup failed: Firebase Admin configuration missing.")
 
     # 1. Database initialization/migrations
     if settings.DATABASE_URL.startswith("sqlite"):

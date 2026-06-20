@@ -111,6 +111,29 @@ class Settings(BaseSettings):
         
         # Dynamic paths when packaged/frozen
         if is_frozen:
+            # Auto-generate secure keys for desktop app if using defaults
+            desktop_env_path = os.path.join(reai_user_dir, ".env.desktop")
+            if os.path.exists(desktop_env_path):
+                with open(desktop_env_path, "r") as f:
+                    for line in f:
+                        if line.startswith("SECRET_KEY="):
+                            self.SECRET_KEY = line.strip().split("=", 1)[1]
+                        elif line.startswith("ENCRYPTION_KEY="):
+                            self.ENCRYPTION_KEY = line.strip().split("=", 1)[1]
+            else:
+                import secrets
+                from cryptography.fernet import Fernet
+                os.makedirs(reai_user_dir, exist_ok=True)
+                
+                if self.SECRET_KEY == "change-me-in-production-use-256-bit-random-string" or len(self.SECRET_KEY) < 16:
+                    self.SECRET_KEY = secrets.token_urlsafe(32)
+                if self.ENCRYPTION_KEY == "change-me-to-a-valid-fernet-key-32-bytes-b64=":
+                    self.ENCRYPTION_KEY = Fernet.generate_key().decode()
+                    
+                with open(desktop_env_path, "w") as f:
+                    f.write(f"SECRET_KEY={self.SECRET_KEY}\n")
+                    f.write(f"ENCRYPTION_KEY={self.ENCRYPTION_KEY}\n")
+
             # Re-route database path to writeable AppData folder
             if self.DATABASE_URL.startswith("sqlite+aiosqlite:///./data"):
                 db_dir = os.path.join(reai_user_dir, "data")

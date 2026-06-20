@@ -27,6 +27,7 @@ hiddenimports = [
     "faster_whisper",
     "faiss",
     "anyio.backends._asyncio",
+    "nest_asyncio",
     "firebase_admin",
     "google.cloud.firestore"
 ]
