@@ -271,3 +271,4 @@ async def health_ready(db: AsyncSession = Depends(get_db)):
             }
         }
     )
+
