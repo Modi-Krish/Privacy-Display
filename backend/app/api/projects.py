@@ -5,16 +5,10 @@ from uuid import UUID
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
-from app.db.models import User, Project
 from app.schemas.profile import ProjectCreate, ProjectUpdate, ProjectOut
-from app.services.chunker import chunk_project, chunk_resume, chunk_skill
-from app.services.embedder import get_embedder
-from app.services.vector_store import get_vector_store, ChunkMeta
-from app.db.models import Resume, Skill
 from app.services.indexing_service import rebuild_index_background
 
 router = APIRouter(prefix="/projects", tags=["projects"])

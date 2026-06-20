@@ -25,7 +25,7 @@ def upload_file_to_storage(bucket_name: str, file_bytes: bytes, file_name: str, 
     path = f"{user_id}/{unique_id}_{file_name}"
     
     try:
-        res = client.storage.from_(bucket_name).upload(
+        client.storage.from_(bucket_name).upload(
             path=path,
             file=file_bytes,
             file_options={"content-type": content_type, "upsert": "true"}

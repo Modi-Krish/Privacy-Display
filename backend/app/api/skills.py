@@ -5,11 +5,9 @@ from uuid import UUID
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 
 from app.core.deps import get_current_user
 from app.db.session import get_db
-from app.db.models import User, Skill
 from app.schemas.profile import SkillCreate, SkillOut
 from app.services.indexing_service import rebuild_index_background
 

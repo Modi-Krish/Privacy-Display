@@ -1,4 +1,3 @@
-import base64
 import logging
 from cryptography.fernet import Fernet
 from app.core.config import get_settings

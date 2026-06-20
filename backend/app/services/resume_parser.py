@@ -1,11 +1,7 @@
 """
 Resume Service — PDF parsing, chunking, embedding, and FAISS index management.
 """
-import os
 import re
-import io
-from pathlib import Path
-from typing import Optional
 
 import fitz  # PyMuPDF
 

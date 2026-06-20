@@ -1,7 +1,7 @@
 import uuid
 import json
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
@@ -172,7 +172,7 @@ async def verify_code(
     now_utc = datetime.now(timezone.utc)
     result = await db.execute(
         select(PairingCode)
-        .where(PairingCode.used == False)
+        .where(PairingCode.used.is_(False))
         .where(PairingCode.expires_at > now_utc)
     )
     active_codes = result.scalars().all()
@@ -355,7 +355,7 @@ async def refresh_tokens(req: RefreshRequest, db: AsyncSession = Depends(get_db)
 
 # ── 5. Logouts and Revocation ─────────────────────────────────────────────────
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user  # noqa: E402
 
 @router.post("/logout")
 async def logout(

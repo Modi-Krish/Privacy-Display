@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """
 FastAPI application entry point.
 Handles lifespan: DB migration, model warm-up, and service initialization.
@@ -58,7 +59,6 @@ async def lifespan(app: FastAPI):
                     os.makedirs(db_dir, exist_ok=True)
             
             from app.db.session import engine, Base
-            import app.db.models
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("SQLite database tables created/verified")
@@ -209,7 +209,6 @@ app.include_router(dashboard_router, prefix="/api")
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from fastapi.responses import JSONResponse
 
 @app.get("/health/live", tags=["health"])
 @app.get("/health", tags=["health"])
@@ -232,13 +231,13 @@ async def health_ready(db: AsyncSession = Depends(get_db)):
         await db.execute(text("SELECT 1"))
         postgres_ok = True
     except Exception as e:
-        logger.error(f"Health check: PostgreSQL failed", extra={"error": str(e)})
+        logger.error("Health check: PostgreSQL failed", extra={"error": str(e)})
 
     # 2. Test Redis
     try:
         redis_ok = await ping_redis()
     except Exception as e:
-        logger.error(f"Health check: Redis failed", extra={"error": str(e)})
+        logger.error("Health check: Redis failed", extra={"error": str(e)})
 
     # 3. Test OpenAI API connection
     try:
@@ -247,7 +246,7 @@ async def health_ready(db: AsyncSession = Depends(get_db)):
         await client.models.list()
         openai_ok = True
     except Exception as e:
-        logger.error(f"Health check: OpenAI API failed", extra={"error": str(e)})
+        logger.error("Health check: OpenAI API failed", extra={"error": str(e)})
 
     # 4. Test Supabase config
     try:

@@ -2,16 +2,13 @@
 Interview API — session management and question processing.
 """
 from datetime import datetime, timezone
-from uuid import UUID
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.core.deps import get_current_user, get_gemini_client
 from app.db.session import get_db
-from app.db.models import User, InterviewSession, Question
 from app.schemas.interview import (
     QuestionRequest, InterviewResponse, SessionOut, SessionEndOut, SessionEndRequest,
 )
@@ -102,9 +99,9 @@ async def submit_question(
     return response
 
 
-from fastapi.responses import StreamingResponse
-import json
-from app.core.logging import get_logger
+from fastapi.responses import StreamingResponse  # noqa: E402
+import json  # noqa: E402
+from app.core.logging import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 

@@ -3,8 +3,6 @@ FAISS Vector Store — per-user index files with atomic saves and metadata sidec
 """
 import json
 from collections import OrderedDict
-import os
-import shutil
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from uuid import UUID

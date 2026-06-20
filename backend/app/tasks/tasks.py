@@ -54,7 +54,7 @@ def run_async(coro):
 
 @celery_app.task(name="app.tasks.tasks.parse_and_chunk_resume_task")
 def parse_and_chunk_resume_task(user_id: str, resume_id: str, file_bytes_b64: str):
-    user_uuid = uuid.UUID(user_id)
+    uuid.UUID(user_id)
     resume_uuid = uuid.UUID(resume_id)
     
     update_progress(user_id, {

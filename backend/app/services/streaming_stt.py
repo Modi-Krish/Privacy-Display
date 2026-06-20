@@ -131,7 +131,7 @@ class StreamingSTTSession:
 
     async def _run(self) -> None:
         """Main transcription loop — drains audio queue and runs Whisper periodically."""
-        loop = asyncio.get_event_loop()
+        asyncio.get_event_loop()
         next_transcribe_at = time.monotonic() + TRANSCRIBE_INTERVAL
 
         while self._running:

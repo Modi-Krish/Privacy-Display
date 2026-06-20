@@ -1,6 +1,5 @@
 import uuid
 import json
-from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -281,10 +280,14 @@ async def update_user_settings(payload: UserSettingUpdate, current_user: User = 
         setting = UserSetting(user_id=current_user.id)
         db.add(setting)
     
-    if payload.theme is not None: setting.theme = payload.theme
-    if payload.overlay_mode is not None: setting.overlay_mode = payload.overlay_mode
-    if payload.hotkeys is not None: setting.hotkeys = payload.hotkeys
-    if payload.ai_preferences is not None: setting.ai_preferences = payload.ai_preferences
+    if payload.theme is not None: 
+        setting.theme = payload.theme
+    if payload.overlay_mode is not None: 
+        setting.overlay_mode = payload.overlay_mode
+    if payload.hotkeys is not None: 
+        setting.hotkeys = payload.hotkeys
+    if payload.ai_preferences is not None: 
+        setting.ai_preferences = payload.ai_preferences
     
     await db.commit()
     
@@ -343,9 +346,12 @@ async def update_browser_state(payload: BrowserStateUpdate, current_user: User =
         state = BrowserState(user_id=current_user.id)
         db.add(state)
         
-    if payload.pinned_tabs is not None: state.pinned_tabs = payload.pinned_tabs
-    if payload.allowed_domains is not None: state.allowed_domains = payload.allowed_domains
-    if payload.blocked_domains is not None: state.blocked_domains = payload.blocked_domains
+    if payload.pinned_tabs is not None: 
+        state.pinned_tabs = payload.pinned_tabs
+    if payload.allowed_domains is not None: 
+        state.allowed_domains = payload.allowed_domains
+    if payload.blocked_domains is not None: 
+        state.blocked_domains = payload.blocked_domains
     
     await db.commit()
     

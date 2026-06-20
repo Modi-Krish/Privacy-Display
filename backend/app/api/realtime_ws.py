@@ -1,3 +1,5 @@
+# ruff: noqa: E402
+import uuid
 """
 Real-Time Voice WebSocket Endpoint.
 
@@ -14,7 +16,6 @@ import asyncio
 import base64
 import json
 import time
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
@@ -373,7 +374,6 @@ class RealtimeSession:
         try:
             from app.services.embedder import get_embedder
             from app.services.retrieval import retrieve
-            from app.schemas.interview import ChunkView
 
             embedder = get_embedder()
             q_vector = await embedder.embed_one(question)

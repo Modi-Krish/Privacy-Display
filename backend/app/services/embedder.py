@@ -3,7 +3,6 @@ Embedder Service — wraps sentence-transformers for vector generation.
 Model is loaded once at startup and shared across requests.
 """
 import asyncio
-from functools import lru_cache
 from typing import Any
 
 import numpy as np

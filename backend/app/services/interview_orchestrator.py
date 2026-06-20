@@ -7,16 +7,13 @@ import time
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.db.models import InterviewSession, Question, Response
 from app.schemas.interview import ChunkView, InterviewResponse
 from app.services.embedder import get_embedder
 from app.services.gemini_service import GeminiService
 from app.services.retrieval import retrieve
 from app.services.prompt_builder import build_prompt
 from app.services.confidence import compute_confidence
-from app.services.vector_store import get_vector_store
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +34,6 @@ async def process_question(
     t_start = time.monotonic()
 
     embedder = get_embedder()
-    store = get_vector_store()
 
     # ── Step 1: Classify + Embed concurrently ─────────────────────────────────
     (category, cat_confidence), q_vector = await asyncio.gather(
@@ -69,7 +65,7 @@ async def process_question(
         db=db
     )
 
-    response_record = await db_service.create_response(
+    await db_service.create_response(
         question_id=question_record.id,
         answer=answer,
         confidence_score=confidence,
@@ -122,7 +118,6 @@ async def stream_question_pipeline(
     t_start = time.monotonic()
 
     embedder = get_embedder()
-    store = get_vector_store()
 
     # 1. Start classification in background (do not block)
     classify_task = asyncio.create_task(gemini_client.classify(question_text))
@@ -183,7 +178,7 @@ async def stream_question_pipeline(
         finally:
             stream_done = True
 
-    collect_task = asyncio.create_task(collect_tokens())
+    asyncio.create_task(collect_tokens())
 
     # 6. (Removed artificial thinking delay)
 
