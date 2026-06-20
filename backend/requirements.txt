@@ -37,7 +37,7 @@ supabase==2.31.0
 
 # Production Hardening
 pgvector==0.3.2
-cryptography==44.0.0
+cryptography>=44.0.1
 redis==5.2.1
 celery==5.4.0
 sentry-sdk[fastapi]==2.19.2
