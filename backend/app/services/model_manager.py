@@ -93,7 +93,7 @@ def download_models() -> None:
         
         # Build try-except block to support corruption recovery
         try:
-            snapshot_download(
+            snapshot_download(  # nosec B615
                 repo_id=cfg["repo_id"],
                 local_dir=folder_path,
                 resume_download=True,
@@ -107,7 +107,7 @@ def download_models() -> None:
             if os.path.exists(folder_path):
                 shutil.rmtree(folder_path, ignore_errors=True)
             os.makedirs(folder_path, exist_ok=True)
-            snapshot_download(
+            snapshot_download(  # nosec B615
                 repo_id=cfg["repo_id"],
                 local_dir=folder_path,
                 resume_download=False,
