@@ -122,15 +122,28 @@ export async function streamPost(
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 15000)
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Gemini-API-Key': apiKey,
+    'X-Gemini-Model': model,
+    'X-Whisper-Model-Size': whisperSize,
+  }
+
+  if (window.electronAPI?.auth) {
+    try {
+      const tokens = await window.electronAPI.auth.getTokens()
+      if (tokens?.access_token) {
+        headers['Authorization'] = `Bearer ${tokens.access_token}`
+      }
+    } catch (e) {
+      console.warn('Failed to retrieve auth tokens for fetch request:', e)
+    }
+  }
+
   try {
     const response = await fetch(`${API_URL}${path}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Gemini-API-Key': apiKey,
-        'X-Gemini-Model': model,
-        'X-Whisper-Model-Size': whisperSize,
-      },
+      headers,
       body: JSON.stringify(body),
       credentials: 'include',
       signal: controller.signal,

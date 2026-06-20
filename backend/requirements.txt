@@ -31,3 +31,16 @@ slowapi==0.1.9
 
 # HTTP client (for testing)
 httpx==0.28.1
+
+# Supabase Storage
+supabase==2.4.3
+
+# Production Hardening
+pgvector==0.3.2
+cryptography==44.0.0
+redis==5.2.1
+celery==5.4.0
+sentry-sdk[fastapi]==2.19.2
+prometheus-client==0.21.1
+openai==1.58.1
+

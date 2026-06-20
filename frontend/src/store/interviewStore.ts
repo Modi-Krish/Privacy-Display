@@ -74,6 +74,9 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   history: [],
 
   startSession: async () => {
+    if (!navigator.onLine) {
+      throw new Error('No internet connection. REAI requires an active connection to start a session.')
+    }
     const { data } = await api.post('/api/interview/start')
     set({ sessionId: data.session_id, isSessionActive: true, history: [], currentTurn: null })
   },

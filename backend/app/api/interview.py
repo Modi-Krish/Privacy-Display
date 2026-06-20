@@ -48,6 +48,10 @@ async def submit_question(
     gemini_client: GeminiService = Depends(get_gemini_client),
     x_whisper_model_size: str | None = Header(None, alias="X-Whisper-Model-Size"),
 ):
+    # Check daily AI response quota
+    from app.core.quotas import check_ai_quota
+    await check_ai_quota(current_user.id)
+
     # Validate session belongs to user
     from app.services.db_service import get_db_service
     db_service = get_db_service()
@@ -112,6 +116,10 @@ async def submit_question_stream(
     gemini_client: GeminiService = Depends(get_gemini_client),
     x_whisper_model_size: str | None = Header(None, alias="X-Whisper-Model-Size"),
 ):
+    # Check daily AI response quota
+    from app.core.quotas import check_ai_quota
+    await check_ai_quota(current_user.id)
+
     # Validate session belongs to user
     from app.services.db_service import get_db_service
     db_service = get_db_service()
@@ -177,6 +185,7 @@ async def end_session(
     db: AsyncSession = Depends(get_db),
 ):
     from app.services.db_service import get_db_service
+    from app.core.redis import delete_cache
     db_service = get_db_service()
     session = await db_service.get_interview_session(body.session_id, current_user.id, db=db)
     if not session:
@@ -184,6 +193,9 @@ async def end_session(
 
     ended_at = datetime.now(timezone.utc)
     await db_service.end_interview_session(session.id, ended_at, db=db)
+
+    # Invalidate dashboard stats cache
+    await delete_cache(f"user_stats:{current_user.id}")
 
     # Count questions
     total = await db_service.get_question_count(session.id, db=db)

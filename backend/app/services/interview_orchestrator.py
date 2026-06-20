@@ -46,7 +46,7 @@ async def process_question(
     )
 
     # ── Step 2: Retrieve relevant context ────────────────────────────────────
-    chunks: list[ChunkView] = await retrieve(question_text, user_id, q_vector=q_vector)
+    chunks: list[ChunkView] = await retrieve(question_text, user_id, db=db, q_vector=q_vector)
     is_personalized = len(chunks) > 0
 
     # ── Step 3: Build prompt ──────────────────────────────────────────────────
@@ -129,7 +129,7 @@ async def stream_question_pipeline(
 
     # 2. Embed and retrieve context
     q_vector = await embedder.embed_one(question_text)
-    chunks = await retrieve(question_text, user_id, q_vector=q_vector)
+    chunks = await retrieve(question_text, user_id, db=db, q_vector=q_vector)
     is_personalized = len(chunks) > 0
 
     # 3. Build prompt

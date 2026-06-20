@@ -70,8 +70,14 @@ export default function InterviewPage() {
   }
 
   const handleStart = async () => {
-    try { await startSession(); toast.success('Session started') }
-    catch { toast.error('Failed to start session') }
+    try { 
+      await startSession(); 
+      toast.success('Session started') 
+    }
+    catch (err: any) { 
+      const msg = err?.response?.data?.detail || err?.message || 'Failed to start session. Backend unreachable.'
+      toast.error(msg) 
+    }
   }
 
   const handleEnd = async () => {

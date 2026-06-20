@@ -1,18 +1,12 @@
-"""
-Speech-to-Text Service — Faster-Whisper wrapper.
-Model loaded once at startup, inference run in thread pool.
-"""
-import asyncio
-import base64
 import io
-import tempfile
-import os
+import base64
+import logging
 from dataclasses import dataclass
+from openai import AsyncOpenAI
 
 from app.core.config import get_settings
-from app.core.logging import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -24,71 +18,62 @@ class TranscriptionResult:
 
 
 class STTService:
-    def __init__(self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"):
-        self._model_size = model_size
-        self._device = device
-        self._compute_type = compute_type
-        self._models: dict[str, Any] = {}
+    def __init__(self):
+        self._client = None
 
     def load(self) -> None:
-        """Prefetch/load default model size."""
-        self._get_model(self._model_size)
-
-    def _get_model(self, model_size: str):
-        if model_size not in self._models:
-            from faster_whisper import WhisperModel
-            import os
-            
-            model_path = os.path.join(settings.MODEL_DIR, f"faster-whisper-{model_size}")
-            if os.path.exists(model_path):
-                load_arg = model_path
-            else:
-                load_arg = model_size
-                
-            logger.info("Loading Whisper model", extra={"model_size": model_size, "path": load_arg})
-            self._models[model_size] = WhisperModel(
-                load_arg,
-                device=self._device,
-                compute_type=self._compute_type,
-                download_root=settings.MODEL_DIR
-            )
-        return self._models[model_size]
-
-    def _transcribe_sync(self, audio_bytes: bytes, model_size: str) -> TranscriptionResult:
-        """Synchronous transcription — runs in thread pool."""
-        model = self._get_model(model_size)
-        audio_file = io.BytesIO(audio_bytes)
-
-        segments, info = model.transcribe(audio_file, language="en")
-        text_parts = []
-        avg_logprob_sum = 0.0
-        seg_count = 0
-        for seg in segments:
-            text_parts.append(seg.text.strip())
-            avg_logprob_sum += seg.avg_logprob
-            seg_count += 1
-
-        text = " ".join(text_parts).strip()
-        # Convert avg_logprob (-inf to 0) to a 0–1 confidence heuristic
-        if seg_count > 0:
-            avg_logprob = avg_logprob_sum / seg_count
-            confidence = max(0.0, min(1.0, 1.0 + avg_logprob))
+        """Startup warm-up: verify API key configuration."""
+        if not settings.OPENAI_API_KEY:
+            logger.warning("OPENAI_API_KEY is not set. OpenAI Whisper STT calls will fail.")
         else:
-            confidence = 0.0
+            logger.info("Stateless OpenAI Whisper STT service initialized.")
 
-        return TranscriptionResult(
-            text=text,
-            confidence=round(confidence, 3),
-            language=info.language,
-        )
+    def get_client(self) -> AsyncOpenAI:
+        if self._client is None:
+            if not settings.OPENAI_API_KEY:
+                raise ValueError("OPENAI_API_KEY environment variable is not configured.")
+            self._client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        return self._client
 
     async def transcribe(self, audio_bytes: bytes, model_size: str | None = None) -> TranscriptionResult:
-        loop = asyncio.get_event_loop()
-        size = model_size or self._model_size
-        return await loop.run_in_executor(None, self._transcribe_sync, audio_bytes, size)
+        """
+        Asynchronously transcribes audio bytes using the OpenAI Whisper API.
+        model_size is ignored since the OpenAI service handles size routing dynamically.
+        """
+        client = self.get_client()
+        
+        # Wrap bytes in BytesIO and name the buffer so the OpenAI client resolves the format
+        audio_file = io.BytesIO(audio_bytes)
+        audio_file.name = "audio.wav"
+
+        try:
+            response = await client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                language="en",
+                response_format="verbose_json"
+            )
+            
+            text = getattr(response, "text", "").strip()
+            language = getattr(response, "language", "english")
+            
+            # Default to high confidence proxy if segments are clean
+            confidence = 0.95
+            
+            return TranscriptionResult(
+                text=text,
+                confidence=confidence,
+                language=language,
+            )
+        except Exception as e:
+            logger.error("OpenAI Whisper API transcription failed", extra={"error": str(e)})
+            raise RuntimeError(f"Transcription failed: {str(e)}")
 
     async def transcribe_b64(self, audio_b64: str, model_size: str | None = None) -> TranscriptionResult:
-        audio_bytes = base64.b64decode(audio_b64)
+        try:
+            audio_bytes = base64.b64decode(audio_b64)
+        except Exception as e:
+            raise ValueError(f"Invalid base64 payload: {e}")
         return await self.transcribe(audio_bytes, model_size)
 
 
@@ -97,6 +82,7 @@ _stt_instance: STTService | None = None
 
 
 def get_stt() -> STTService:
+    global _stt_instance
     if _stt_instance is None:
         raise RuntimeError("STTService not initialized")
     return _stt_instance
@@ -104,6 +90,6 @@ def get_stt() -> STTService:
 
 def init_stt(model_size: str, device: str, compute_type: str) -> STTService:
     global _stt_instance
-    _stt_instance = STTService(model_size, device, compute_type)
+    _stt_instance = STTService()
     _stt_instance.load()
     return _stt_instance

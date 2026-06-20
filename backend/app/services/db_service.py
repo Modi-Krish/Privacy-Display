@@ -116,6 +116,10 @@ class BaseDatabaseService(abc.ABC):
         pass
 
     @abc.abstractmethod
+    async def create_resume_version(self, resume_id: UUID, file_name: str, extracted_text: str | None, db: any = None):
+        pass
+
+    @abc.abstractmethod
     async def delete_resume(self, user_id: UUID, db: any = None) -> None:
         pass
 

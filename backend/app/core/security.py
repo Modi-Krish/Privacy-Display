@@ -26,8 +26,8 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def generate_pairing_code() -> str:
     import secrets
-    # Generate a secure 6-digit code
-    return "".join(str(secrets.randbelow(10)) for _ in range(6))
+    # Generate a cryptographically secure token with 128-bit entropy (16 bytes)
+    return secrets.token_urlsafe(16)
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
@@ -38,16 +38,22 @@ def _create_token(data: dict[str, Any], expires_delta: timedelta) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def create_access_token(user_id: UUID) -> str:
+def create_access_token(user_id: UUID, session_id: UUID | None = None) -> str:
+    payload = {"sub": str(user_id), "type": "access"}
+    if session_id:
+        payload["sid"] = str(session_id)
     return _create_token(
-        {"sub": str(user_id), "type": "access"},
+        payload,
         timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
 
-def create_refresh_token(user_id: UUID) -> str:
+def create_refresh_token(user_id: UUID, session_id: UUID | None = None) -> str:
+    payload = {"sub": str(user_id), "type": "refresh"}
+    if session_id:
+        payload["sid"] = str(session_id)
     return _create_token(
-        {"sub": str(user_id), "type": "refresh"},
+        payload,
         timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 

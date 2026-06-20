@@ -10,11 +10,25 @@ settings = get_settings()
 _initialized = False
 
 try:
+    json_b64 = os.getenv("FIREBASE_SERVICE_ACCOUNT_B64")
     json_path = settings.FIREBASE_SERVICE_ACCOUNT_JSON
-    if json_path:
+    
+    if json_b64:
+        import base64
+        import json
+        try:
+            raw_json = base64.b64decode(json_b64).decode("utf-8")
+            cred_dict = json.loads(raw_json)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            _initialized = True
+            logger.info("Firebase Admin SDK initialized successfully using Base64 environment variable.")
+        except Exception as e:
+            logger.error("Failed to initialize Firebase Admin SDK from Base64 environment variable", extra={"error": str(e)})
+    
+    if not _initialized and json_path:
         # Resolve relative path if necessary
         if not os.path.isabs(json_path):
-            # Check current working dir or relative to backend folder
             possible_paths = [
                 os.path.abspath(json_path),
                 os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", json_path))
@@ -31,8 +45,9 @@ try:
             logger.info(f"Firebase Admin SDK initialized successfully using certificate: {json_path}")
         else:
             logger.warning(f"Firebase service account file not found at: {json_path}. Firebase auth will be unavailable.")
-    else:
-        logger.warning("FIREBASE_SERVICE_ACCOUNT_JSON is not configured in settings/environment. Firebase auth will be unavailable.")
+    
+    if not _initialized:
+        logger.warning("No valid Firebase Admin SDK configuration found. Firebase auth will be unavailable.")
 except Exception as e:
     logger.error("Failed to initialize Firebase Admin SDK", extra={"error": str(e)})
 

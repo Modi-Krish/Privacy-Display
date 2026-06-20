@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getApiUrl } from '@/api/client'
+import { useInterviewStore } from '@/store/interviewStore'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,12 +76,24 @@ export function useRealtimeVoice(): RealtimeVoiceState & RealtimeVoiceActions {
 
   // ── WebSocket connection ─────────────────────────────────────────────────
 
-  const buildWsUrl = useCallback(() => {
+  const buildWsUrl = useCallback(async () => {
     const apiUrl = getApiUrl()
     const wsBase = apiUrl.replace(/^http/, 'ws')
     const apiKey = localStorage.getItem('gemini_api_key') || ''
     const model = localStorage.getItem('gemini_model') || ''
-    return `${wsBase}/api/ws/realtime?api_key=${encodeURIComponent(apiKey)}&model=${encodeURIComponent(model)}`
+    const sessionId = useInterviewStore.getState().sessionId || ''
+    let tokenParam = ''
+    if (window.electronAPI?.auth) {
+      try {
+        const tokens = await window.electronAPI.auth.getTokens()
+        if (tokens?.access_token) {
+          tokenParam = `&token=${encodeURIComponent(tokens.access_token)}`
+        }
+      } catch (e) {
+        console.warn('Failed to retrieve auth tokens for WebSocket url:', e)
+      }
+    }
+    return `${wsBase}/api/ws/realtime?api_key=${encodeURIComponent(apiKey)}&model=${encodeURIComponent(model)}&session_id=${encodeURIComponent(sessionId)}${tokenParam}`
   }, [])
 
   const handleWsMessage = useCallback((event: MessageEvent) => {
@@ -159,7 +172,8 @@ export function useRealtimeVoice(): RealtimeVoiceState & RealtimeVoiceActions {
     setError(null)
 
     try {
-      const ws = new WebSocket(buildWsUrl())
+      const wsUrl = await buildWsUrl()
+      const ws = new WebSocket(wsUrl)
       wsRef.current = ws
 
       ws.onopen = () => {

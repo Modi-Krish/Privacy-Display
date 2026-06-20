@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useProfileStore } from '@/store/profileStore'
 import toast from 'react-hot-toast'
+import axios from 'axios'
+import { getApiUrl } from '@/api/client'
+import { useNavigate } from 'react-router-dom'
 import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
@@ -17,11 +20,24 @@ export default function ProfilePage() {
   const [showAddProj, setShowAddProj] = useState(false)
   const [projForm, setProjForm]   = useState({ title: '', description: '', technologies: '' })
   const [isDragActive, setIsDragActive] = useState(false)
+  const [authCode, setAuthCode] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchProfile()
     fetchProjects()
     fetchSkills()
+    const checkAuth = async () => {
+      if (window.electronAPI?.auth) {
+        const tokens = await window.electronAPI.auth.getTokens()
+        if (tokens?.access_token) {
+          setIsAuthenticated(true)
+        }
+      }
+    }
+    checkAuth()
   }, [])
 
   useEffect(() => {
@@ -99,6 +115,53 @@ export default function ProfilePage() {
     }
   }
 
+  const handlePair = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!authCode || authCode.trim().length === 0) return
+
+    setAuthLoading(true)
+    try {
+      let deviceId = localStorage.getItem('device_id')
+      if (!deviceId) {
+        deviceId = crypto.randomUUID()
+        localStorage.setItem('device_id', deviceId)
+      }
+
+      const { data } = await axios.post(`${getApiUrl()}/api/auth/desktop/pair/verify`, {
+        code: authCode,
+        device_id: deviceId,
+        device_name: window.electronAPI ? `REAI Desktop (${window.electronAPI.platform})` : 'REAI Desktop'
+      })
+
+      if (window.electronAPI?.auth) {
+        await window.electronAPI.auth.setTokens({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          user_id: data.user_id
+        })
+      }
+
+      toast.success('Device paired successfully!')
+      setIsAuthenticated(true)
+      setAuthCode('')
+    } catch (error: any) {
+      console.error(error)
+      const msg = error.response?.data?.detail || 'Failed to verify pairing code.'
+      toast.error(msg)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    if (window.electronAPI?.auth) {
+      await window.electronAPI.auth.clearTokens()
+    }
+    setIsAuthenticated(false)
+    toast.success('Logged out successfully')
+    navigate('/auth')
+  }
+
   return (
     <div className={styles.page}>
 
@@ -128,6 +191,61 @@ export default function ProfilePage() {
       )}
 
       <div className={styles.bentoGrid}>
+        {/* ── Account Section ────────────────────────────────── */}
+        <section className={`${styles.md3Card} ${styles.accountSection}`}>
+          <h2 className={styles.cardHeader}>
+            <span className={`material-symbols-outlined ${styles.cardHeaderIcon}`}>account_circle</span>
+            Account Connection
+            {isAuthenticated && (
+              <div className={styles.cardHeaderRight}>
+                <span className={styles.indexedBadge} style={{ background: '#d4edda', borderColor: '#28a745', color: '#155724' }}>
+                  <span className={`material-symbols-outlined ${styles.indexedBadgeIcon}`}>check_circle</span>
+                  Connected
+                </span>
+              </div>
+            )}
+          </h2>
+
+          {isAuthenticated ? (
+            <div className={styles.accountActive}>
+              <div className={styles.accountInfoWrap}>
+                <span className={`material-symbols-outlined ${styles.accountIcon}`}>verified_user</span>
+                <div>
+                  <p className={styles.accountStatus}>Your device is linked to REAI</p>
+                  <p className={styles.accountMeta}>You can access your cloud data.</p>
+                </div>
+              </div>
+              <button className={styles.removeBtn} onClick={handleLogout}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <div className={styles.accountInactive}>
+              <p className={styles.accountDesc}>
+                Please visit <a href="https://app.reai.ai" target="_blank" rel="noreferrer" style={{ color: '#2d5da1', textDecoration: 'underline' }}>app.reai.ai</a> to sign in and generate a pairing code.
+              </p>
+              <form onSubmit={handlePair} className={styles.accountForm}>
+                <input
+                  className={styles.skillInput}
+                  type="text"
+                  placeholder="Enter pairing code"
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value.trim())}
+                />
+                <button 
+                  type="submit" 
+                  className={`${styles.pillButton} ${styles.skillAddBtn}`}
+                  disabled={authLoading || authCode.trim().length === 0}
+                  style={{ width: 'auto' }}
+                >
+                  {authLoading ? 'Pairing...' : 'Connect'}
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+
         {/* ── Resume Section ────────────────────────────────── */}
         <section className={`${styles.md3Card} ${styles.resumeSection}`}>
           <h2 className={styles.cardHeader}>

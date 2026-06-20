@@ -6,7 +6,7 @@ from app.services.db_service import (
     BaseDatabaseService, UserDBModel, ProfileDBModel, ResumeDBModel,
     ProjectDBModel, SkillDBModel, InterviewSessionDBModel, QuestionDBModel, ResponseDBModel
 )
-from app.db.models import User, Profile, Resume, Project, Skill, InterviewSession, Question, Response
+from app.db.models import User, Profile, Resume, ResumeVersion, Project, Skill, InterviewSession, Question, Response
 
 class SQLiteDatabaseService(BaseDatabaseService):
     def _ensure_db(self, db: AsyncSession | None) -> AsyncSession:
@@ -72,12 +72,26 @@ class SQLiteDatabaseService(BaseDatabaseService):
 
     async def create_resume(self, user_id: UUID, file_name: str, extracted_text: str | None, db: AsyncSession | None = None) -> ResumeDBModel:
         db = self._ensure_db(db)
-        # Delete existing resume
-        await db.execute(delete(Resume).where(Resume.user_id == user_id))
-        resume = Resume(user_id=user_id, file_name=file_name, extracted_text=extracted_text)
-        db.add(resume)
+        result = await db.execute(select(Resume).where(Resume.user_id == user_id))
+        resume = result.scalar_one_or_none()
+        
+        if resume:
+            resume.file_name = file_name
+            resume.extracted_text = extracted_text
+            resume.uploaded_at = datetime.now()
+        else:
+            resume = Resume(user_id=user_id, file_name=file_name, extracted_text=extracted_text)
+            db.add(resume)
+            
         await db.flush()
         return ResumeDBModel.model_validate(resume)
+
+    async def create_resume_version(self, resume_id: UUID, file_name: str, extracted_text: str | None, db: AsyncSession | None = None):
+        db = self._ensure_db(db)
+        version = ResumeVersion(resume_id=resume_id, file_name=file_name, extracted_text=extracted_text)
+        db.add(version)
+        await db.flush()
+        return version
 
     async def delete_resume(self, user_id: UUID, db: AsyncSession | None = None) -> None:
         db = self._ensure_db(db)

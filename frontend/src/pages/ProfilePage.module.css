@@ -97,6 +97,55 @@
 }
 .indexedBadgeIcon { font-size: 14px; }
 
+/* ── Account Section ─────────────────────────────────────────────────────── */
+.accountSection {
+  grid-column: span 12;
+}
+
+.accountActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0fdf4;
+  border: 2px solid #28a745;
+  border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
+  padding: 14px 18px;
+  box-shadow: 3px 3px 0px 0px #2d2d2d;
+}
+
+.accountInfoWrap { display: flex; align-items: center; gap: 14px; }
+.accountIcon { font-size: 28px; color: #28a745; }
+.accountStatus {
+  font-family: 'Kalam', cursive;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d2d2d;
+  margin-bottom: 2px;
+}
+.accountMeta {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.accountInactive {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accountDesc {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.95rem;
+  color: #2d2d2d;
+}
+
+.accountForm {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 /* ── Resume Section ──────────────────────────────────────────────────────── */
 .resumeSection {
   grid-column: span 12;

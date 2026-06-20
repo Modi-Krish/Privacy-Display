@@ -58,7 +58,7 @@ function stopBackend() {
     console.log('Terminating backend process...')
     if (process.platform === 'win32') {
       try {
-        spawn('taskkill', ['/pid', backendProcess.pid!.toString(), '/f', '/t'])
+        spawn('C:\\Windows\\System32\\taskkill.exe', ['/pid', backendProcess.pid!.toString(), '/f', '/t'])
       } catch (err) {
         console.error('Failed to taskkill backend on Windows:', err)
       }
@@ -70,6 +70,17 @@ function stopBackend() {
 }
 
 // ── Main Window ─────────────────────────────────────────────────────────────
+
+const ALLOWED_MAIN_ORIGINS = [
+  /^http:\/\/localhost:3000/,
+  /^http:\/\/127.0.0.1:3000/,
+  /^https:\/\/accounts\.google\.com/,
+  /^file:\/\//
+]
+
+function isMainUrlAllowed(url: string): boolean {
+  return ALLOWED_MAIN_ORIGINS.some((pattern) => pattern.test(url))
+}
 
 function createWindow() {
   // Remove the native menu bar entirely
@@ -88,8 +99,28 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      webviewTag: true,
+      webviewTag: false, // Security: explicitly disabled
     },
+  })
+
+  // Restrict navigation in the main window
+  win.webContents.on('will-navigate', (event, navigationUrl) => {
+    if (!isMainUrlAllowed(navigationUrl)) {
+      console.warn(`Blocked main window navigation to untrusted URL: ${navigationUrl}`)
+      event.preventDefault()
+    }
+  })
+
+  // Prevent popup windows
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isMainUrlAllowed(url)) {
+      // Allow Google Sign-In popups
+      if (url.includes('accounts.google.com')) {
+        return { action: 'allow' }
+      }
+    }
+    console.warn(`Blocked new window creation for URL: ${url}`)
+    return { action: 'deny' }
   })
 
   if (isDev) {
@@ -342,7 +373,45 @@ ipcMain.on('browser-create-tab', (event, id: string, url: string) => {
   })
   browserViews.set(id, view)
   win.addBrowserView(view)
-  view.webContents.loadURL(url)
+  
+  // Validate protocol before loading initial URL
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      view.webContents.loadURL(url)
+    } else {
+      console.warn(`Blocked loading invalid initial URL: ${url}`)
+      view.webContents.loadURL('about:blank')
+    }
+  } catch (e) {
+    view.webContents.loadURL('about:blank')
+  }
+
+  // Restrict navigation in BrowserView
+  view.webContents.on('will-navigate', (navEvent, navigationUrl) => {
+    try {
+      const parsed = new URL(navigationUrl)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        console.warn(`Blocked BrowserView navigation to non-web protocol: ${navigationUrl}`)
+        navEvent.preventDefault()
+      }
+    } catch (e) {
+      navEvent.preventDefault()
+    }
+  })
+
+  // Offload new windows/popups to system browser
+  view.webContents.setWindowOpenHandler(({ url: openUrl }) => {
+    try {
+      const parsed = new URL(openUrl)
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        require('electron').shell.openExternal(openUrl)
+      }
+    } catch (e) {
+      console.error('Failed to open external window:', e)
+    }
+    return { action: 'deny' }
+  })
 
   // Send navigation and title events back to React
   view.webContents.on('did-navigate', (_, navUrl) => {

@@ -12,6 +12,17 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging, get_logger
 
 settings = get_settings()
+
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastAPIIntegration
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=1.0 if settings.DEBUG else 0.1,
+        profiles_sample_rate=1.0 if settings.DEBUG else 0.1,
+        integrations=[FastAPIIntegration()]
+    )
+
 setup_logging("DEBUG" if settings.DEBUG else "INFO")
 logger = get_logger(__name__)
 
@@ -20,6 +31,21 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     # ── Startup ───────────────────────────────────────────────────────────────
     logger.info("Starting up Real-Time AI Privacy Display API")
+
+    # Production Secret Validation Gating
+    if not settings.DEBUG:
+        if settings.SECRET_KEY == "change-me-in-production-use-256-bit-random-string" or len(settings.SECRET_KEY) < 16:
+            logger.critical("Insecure SECRET_KEY configured in production mode!")
+            raise RuntimeError("Production startup failed: Insecure SECRET_KEY configuration.")
+        
+        if settings.ENCRYPTION_KEY == "change-me-to-a-valid-fernet-key-32-bytes-b64=":
+            logger.critical("Default ENCRYPTION_KEY configured in production mode!")
+            raise RuntimeError("Production startup failed: Insecure ENCRYPTION_KEY configuration.")
+            
+        from app.services.firebase_admin_service import _initialized as fb_initialized
+        if not fb_initialized:
+            logger.critical("Firebase Admin is not initialized! Firebase authentication will fail in production.")
+            raise RuntimeError("Production startup failed: Firebase Admin configuration missing.")
 
     # 1. Database initialization/migrations
     if settings.DATABASE_URL.startswith("sqlite"):
@@ -116,6 +142,10 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# Prometheus Metrics
+from prometheus_client import make_asgi_app
+app.mount("/metrics", make_asgi_app())
+
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
@@ -162,6 +192,7 @@ from app.api.interview import router as interview_router
 from app.api.audio import router as audio_router
 from app.api.realtime_ws import router as realtime_ws_router
 from app.api.auth import router as auth_router
+from app.api.dashboard import router as dashboard_router
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(profile_router, prefix="/api")
@@ -171,9 +202,73 @@ app.include_router(skills_router, prefix="/api")
 app.include_router(interview_router, prefix="/api")
 app.include_router(audio_router, prefix="/api")
 app.include_router(realtime_ws_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db
+from fastapi.responses import JSONResponse
+
+@app.get("/health/live", tags=["health"])
 @app.get("/health", tags=["health"])
-async def health():
+async def health_live():
     return {"status": "ok", "version": settings.APP_VERSION}
+
+@app.get("/health/ready", tags=["health"])
+async def health_ready(db: AsyncSession = Depends(get_db)):
+    from app.core.redis import ping_redis
+    from app.services.stt_service import get_stt
+    
+    postgres_ok = False
+    redis_ok = False
+    openai_ok = False
+    supabase_ok = False
+    
+    # 1. Test PostgreSQL
+    try:
+        from sqlalchemy import text
+        await db.execute(text("SELECT 1"))
+        postgres_ok = True
+    except Exception as e:
+        logger.error(f"Health check: PostgreSQL failed", extra={"error": str(e)})
+
+    # 2. Test Redis
+    try:
+        redis_ok = await ping_redis()
+    except Exception as e:
+        logger.error(f"Health check: Redis failed", extra={"error": str(e)})
+
+    # 3. Test OpenAI API connection
+    try:
+        stt = get_stt()
+        client = stt.get_client()
+        await client.models.list()
+        openai_ok = True
+    except Exception as e:
+        logger.error(f"Health check: OpenAI API failed", extra={"error": str(e)})
+
+    # 4. Test Supabase config
+    try:
+        if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+            supabase_ok = True
+    except Exception:
+        pass
+
+    status_code = 200
+    if not (postgres_ok and redis_ok and openai_ok and supabase_ok):
+        status_code = 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ready" if status_code == 200 else "unready",
+            "components": {
+                "postgres": "ok" if postgres_ok else "failed",
+                "redis": "ok" if redis_ok else "failed",
+                "openai": "ok" if openai_ok else "failed",
+                "supabase": "ok" if supabase_ok else "failed",
+            }
+        }
+    )

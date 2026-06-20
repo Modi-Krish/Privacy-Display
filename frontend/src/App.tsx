@@ -11,6 +11,7 @@ import TitleBar from '@/components/TitleBar'
 
 import AuthPage from '@/pages/AuthPage'
 import OverlayPage from '@/pages/OverlayPage'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function App() {
   useEffect(() => {
@@ -68,12 +69,14 @@ export default function App() {
 
           {/* Main app routes */}
           <Route path="/auth" element={<AuthPage />} />
-          <Route element={<AppShell />}>
-            <Route index element={<Navigate to="/interview" replace />} />
-            <Route path="/interview" element={<InterviewPage />} />
-            <Route path="/profile"   element={<ProfilePage />} />
-            <Route path="/browser"   element={<></>} />
-            <Route path="/settings"  element={<SettingsPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppShell />}>
+              <Route index element={<Navigate to="/interview" replace />} />
+              <Route path="/interview" element={<InterviewPage />} />
+              <Route path="/profile"   element={<ProfilePage />} />
+              <Route path="/browser"   element={<></>} />
+              <Route path="/settings"  element={<SettingsPage />} />
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import axios from "axios";
 
 export default function Home() {
@@ -12,47 +14,65 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
   useEffect(() => {
+    const handleBackendLogin = async (currentUser: User) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = await currentUser.getIdToken();
+        // Ensure user exists in backend
+        await axios.post(`${API_URL}/api/auth/web/login`, {
+          firebase_token: token,
+        });
+        // Generate pairing code
+        const { data } = await axios.post(`${API_URL}/api/auth/web/pair/generate`, {
+          firebase_token: token,
+        });
+        setPairingCode(data.code);
+        setExpiresAt(new Date(data.expires_at).toLocaleTimeString());
+      } catch (err: unknown) {
+        console.error(err);
+        setError("Failed to communicate with backend. Make sure it is running.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          await setDoc(userRef, {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoURL: currentUser.photoURL,
+            lastLogin: serverTimestamp(),
+          }, { merge: true });
+        } catch (err) {
+          console.error("Failed to save user to Firestore:", err);
+        }
         await handleBackendLogin(currentUser);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [API_URL]);
 
-  const handleBackendLogin = async (currentUser: User) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await currentUser.getIdToken();
-      // Ensure user exists in backend
-      await axios.post(`${API_URL}/api/auth/web/login`, {
-        firebase_token: token,
-      });
-      // Generate pairing code
-      const { data } = await axios.post(`${API_URL}/api/auth/web/pair/generate`, {
-        firebase_token: token,
-      });
-      setPairingCode(data.code);
-      setExpiresAt(new Date(data.expires_at).toLocaleTimeString());
-    } catch (err: any) {
-      console.error(err);
-      setError("Failed to communicate with backend. Make sure it is running.");
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An error occurred during sign in");
+      }
     }
   };
 
@@ -66,7 +86,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-6 font-sans">
       <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl text-center">
-        <h1 className="text-3xl font-bold mb-2 tracking-tight">REAI Portal</h1>
+        <h1 className="text-3xl font-bold mb-2 tracking-tight">REAI Authentication</h1>
         <p className="text-neutral-400 mb-8">Authenticate your desktop device</p>
 
         {error && (
@@ -104,12 +124,21 @@ export default function Home() {
                 <p className="text-sm text-orange-400 mb-8">
                   Expires at {expiresAt}
                 </p>
-                <button
-                  onClick={handleSignOut}
-                  className="text-sm text-neutral-500 hover:text-white transition-colors"
-                >
-                  Sign out
-                </button>
+                <div className="flex flex-col gap-3 w-full">
+                  <Link
+                    href="/dashboard/sessions"
+                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-indigo-500 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">history</span>
+                    View Interview History
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-sm text-neutral-500 hover:text-white transition-colors py-2"
+                  >
+                    Sign out
+                  </button>
+                </div>
               </>
             ) : null}
           </div>

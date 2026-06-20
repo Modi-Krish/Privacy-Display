@@ -172,9 +172,7 @@ class StreamingSTTSession:
             # Run Whisper on schedule
             if now >= next_transcribe_at and len(self._buffer) > SAMPLE_RATE * BYTES_PER_SAMPLE * 0.3:
                 next_transcribe_at = now + TRANSCRIBE_INTERVAL
-                transcript = await loop.run_in_executor(
-                    None, self._transcribe_buffer, bytes(self._buffer)
-                )
+                transcript = await self._transcribe_buffer_async(bytes(self._buffer))
                 if transcript and transcript != self._last_transcript:
                     self._last_transcript = transcript
                     event_type = "question_detected" if _has_question_signal(transcript) else "partial"
@@ -187,23 +185,16 @@ class StreamingSTTSession:
 
         # Final transcription pass on remaining buffer
         if len(self._buffer) > SAMPLE_RATE * BYTES_PER_SAMPLE * 0.2:
-            loop = asyncio.get_event_loop()
-            final = await loop.run_in_executor(
-                None, self._transcribe_buffer, bytes(self._buffer)
-            )
+            final = await self._transcribe_buffer_async(bytes(self._buffer))
             if final and final != self._last_transcript:
                 await self._event_queue.put({"type": "final", "text": final})
 
-    def _transcribe_buffer(self, pcm_bytes: bytes) -> str:
+    async def _transcribe_buffer_async(self, pcm_bytes: bytes) -> str:
         """
-        Synchronous Whisper call — runs in thread pool.
-        Converts raw 16-bit PCM → float32 numpy → in-memory WAV → Whisper.
+        Asynchronous Whisper call via OpenAI API.
+        Converts raw 16-bit PCM → float32 numpy → in-memory WAV → OpenAI Whisper.
         """
         try:
-            from app.services.stt_service import get_stt
-            stt = get_stt()
-            model = stt._get_model(stt._model_size)
-
             # Convert 16-bit PCM → float32
             count = len(pcm_bytes) // 2
             if count == 0:
@@ -219,18 +210,12 @@ class StreamingSTTSession:
                 wf.setsampwidth(2)
                 wf.setframerate(SAMPLE_RATE)
                 wf.writeframes((samples * 32768).astype(np.int16).tobytes())
-            wav_buffer.seek(0)
+            wav_bytes = wav_buffer.getvalue()
 
-            segments, _ = model.transcribe(
-                wav_buffer,
-                language="en",
-                beam_size=1,                    # fastest
-                best_of=1,
-                vad_filter=True,
-                vad_parameters={"min_silence_duration_ms": 300},
-                condition_on_previous_text=False,  # lower latency
-            )
-            return " ".join(seg.text.strip() for seg in segments).strip()
+            from app.services.stt_service import get_stt
+            stt = get_stt()
+            result = await stt.transcribe(wav_bytes)
+            return result.text
         except Exception as e:
             logger.warning("Streaming transcription error", extra={"error": str(e)})
             return ""

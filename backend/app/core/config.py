@@ -25,7 +25,9 @@ class Settings(BaseSettings):
 
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "sqlite+aiosqlite:///./data/reai.db"
-    DATABASE_PROVIDER: str = "sqlite"  # 'sqlite' or 'firestore'
+    DATABASE_PROVIDER: str = "sqlite"  # 'sqlite', 'firestore', or 'supabase'
+    SUPABASE_URL: str | None = None
+    SUPABASE_KEY: str | None = None
 
     # ── Auth ──────────────────────────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production-use-256-bit-random-string"
@@ -65,14 +67,27 @@ class Settings(BaseSettings):
     # ── Rate Limiting ─────────────────────────────────────────────────────────
     RATE_LIMIT_PER_MINUTE: int = 60
 
+    # ── Redis ─────────────────────────────────────────────────────────────────
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # ── Encryption ────────────────────────────────────────────────────────────
+    ENCRYPTION_KEY: str = "change-me-to-a-valid-fernet-key-32-bytes-b64="
+
+    # ── Observability ─────────────────────────────────────────────────────────
+    SENTRY_DSN: str | None = None
+
+    # ── OpenAI ────────────────────────────────────────────────────────────────
+    OPENAI_API_KEY: str | None = None
+
     # ── CORS ──────────────────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
         "https://modi-krish.github.io",
         "app://.",
-        "file://",
-        "null"
+        "file://"
     ]
 
     @model_validator(mode="after")

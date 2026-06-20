@@ -25,7 +25,7 @@ export default function AuthPage() {
 
   const handlePair = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!code || code.length < 6) return
+    if (!code || code.trim().length === 0) return
 
     setLoading(true)
     try {
@@ -76,10 +76,9 @@ export default function AuthPage() {
           <div className={styles.inputGroup}>
             <input
               type="text"
-              placeholder="Enter 6-digit code"
+              placeholder="Enter pairing code"
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              maxLength={6}
+              onChange={(e) => setCode(e.target.value.trim())}
               className={styles.input}
               autoFocus
             />
@@ -87,7 +86,7 @@ export default function AuthPage() {
           
           <button 
             type="submit" 
-            disabled={loading || code.length < 6}
+            disabled={loading || code.trim().length === 0}
             className={`${styles.button} ${loading ? styles.loading : ''}`}
           >
             {loading ? 'Pairing...' : 'Connect'}

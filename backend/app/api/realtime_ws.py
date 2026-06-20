@@ -56,11 +56,12 @@ class RealtimeSession:
     Coordinates the three async pipelines.
     """
 
-    def __init__(self, websocket: WebSocket, gemini_api_key: str, gemini_model: str, user_id: str):
+    def __init__(self, websocket: WebSocket, gemini_api_key: str, gemini_model: str, user_id: str, session_id: str = ""):
         self.ws = websocket
         self.gemini_api_key = gemini_api_key
         self.gemini_model = gemini_model
         self.user_id = user_id
+        self.session_id = session_id
 
         # STT session
         self.stt_session = StreamingSTTSession()
@@ -94,6 +95,29 @@ class RealtimeSession:
 
         try:
             async for message in self.ws.iter_text():
+                # Size check: 2MB limit
+                if len(message) > 2 * 1024 * 1024:
+                    logger.warning("Message size exceeded 2MB limit", extra={"user_id": self.user_id})
+                    await self.send({"type": "error", "detail": "Message size exceeded 2MB limit"})
+                    break
+                
+                # Message rate limit: 100 messages per minute (sliding window in Redis)
+                from app.core.redis import get_redis_client
+                r = get_redis_client()
+                rate_key = f"ws_rate:{self.user_id}"
+                current_time = time.time()
+                await r.zremrangebyscore(rate_key, 0, current_time - 60)
+                msg_count = await r.zcard(rate_key)
+                
+                if msg_count >= 100:
+                    logger.warning("WebSocket rate limit exceeded", extra={"user_id": self.user_id})
+                    await self.send({"type": "error", "detail": "Message rate limit exceeded (max 100/min)"})
+                    break
+                
+                # Add current message timestamp
+                await r.zadd(rate_key, {str(current_time): current_time})
+                await r.expire(rate_key, 65)
+                
                 await self._handle_client_message(message)
         except WebSocketDisconnect:
             logger.info("WebSocket client disconnected")
@@ -284,6 +308,43 @@ class RealtimeSession:
                 if len(self.conversation_history) > 10:
                     self.conversation_history = self.conversation_history[-10:]
 
+                # Persist Voice transcript & answer to database under session_messages
+                if self.session_id and self.session_id != "default":
+                    try:
+                        from app.db.session import AsyncSessionLocal
+                        from app.db.models import SessionMessage
+                        
+                        async with AsyncSessionLocal() as db_session:
+                            # 1. Save question
+                            q_msg = SessionMessage(
+                                session_id=uuid.UUID(self.session_id),
+                                message_type="question",
+                                content=question
+                            )
+                            db_session.add(q_msg)
+                            
+                            # 2. Save context if available
+                            if context:
+                                c_msg = SessionMessage(
+                                    session_id=uuid.UUID(self.session_id),
+                                    message_type="retrieved_context",
+                                    content=context
+                                )
+                                db_session.add(c_msg)
+                                
+                            # 3. Save answer
+                            a_msg = SessionMessage(
+                                session_id=uuid.UUID(self.session_id),
+                                message_type="answer",
+                                content=complete_answer
+                            )
+                            db_session.add(a_msg)
+                            
+                            await db_session.commit()
+                            logger.info("WebSocket voice session messages saved to PostgreSQL.", extra={"session_id": self.session_id})
+                    except Exception as db_err:
+                        logger.error("Failed to persist WebSocket Q&A to database", extra={"error": str(db_err)})
+
                 await self.send({
                     "type": "answer_done",
                     "question": question,
@@ -323,7 +384,9 @@ class RealtimeSession:
             except (ValueError, AttributeError):
                 uid = UUID("00000000-0000-0000-0000-000000000000")
 
-            chunks = await retrieve(question, uid, q_vector=q_vector)
+            from app.db.session import AsyncSessionLocal
+            async with AsyncSessionLocal() as db_session:
+                chunks = await retrieve(question, uid, db=db_session, q_vector=q_vector)
             context = build_realtime_prompt(question, chunks)
             self._rag_cache[key] = context
 
@@ -359,27 +422,86 @@ class RealtimeSession:
 @router.websocket("/realtime")
 async def realtime_endpoint(
     websocket: WebSocket,
+    token: str = Query(default=""),
     api_key: str = Query(default=""),
     model: str = Query(default=""),
-    user_id: str = Query(default="default"),
+    session_id: str = Query(default=""),
 ):
     """
     Real-time voice WebSocket endpoint.
     
     Query params:
+      token    — JWT Access Token or Firebase ID Token
       api_key  — Gemini API key (falls back to server config)
       model    — Gemini model name (falls back to server config)
-      user_id  — user identifier for RAG retrieval (defaults to 'default')
-    
-    Localhost-only: rejects connections from non-local hosts.
     """
-    # Localhost guard
-    if not _is_localhost(websocket):
-        await websocket.close(code=1008, reason="Remote connections not allowed")
+    import uuid
+    resolved_user_id = None
+    token_valid = False
+
+    # 1. Try custom JWT validation (Desktop client)
+    try:
+        from app.core.security import decode_token
+        payload = decode_token(token, expected_type="access")
+        sub = payload.get("sub")
+        if sub:
+            try:
+                resolved_user_id = str(uuid.UUID(sub))
+                token_valid = True
+            except ValueError:
+                pass
+    except Exception:
+        pass
+
+    # 2. Try Firebase ID token validation (Web dashboard/fallback)
+    if not token_valid:
+        try:
+            from app.services.firebase_admin_service import verify_firebase_token
+            from app.services.db_service import get_db_service
+            from app.db.session import AsyncSessionLocal
+            
+            decoded_token = verify_firebase_token(token)
+            email = decoded_token.get("email")
+            if email:
+                db_service = get_db_service()
+                async with AsyncSessionLocal() as db_session:
+                    user = await db_session.get_user_by_email(email, db=db_session)
+                    if not user:
+                        # Auto-provision user on WS first login if authenticated via Firebase
+                        user = await db_service.create_user(email=email, password_hash="firebase_auth", db=db_session)
+                        await db_session.commit()
+                    resolved_user_id = str(user.id)
+                    token_valid = True
+        except Exception as e:
+            logger.error("WebSocket Firebase token validation failed", extra={"error": str(e)})
+
+    if not token_valid or not resolved_user_id:
+        await websocket.close(code=1008, reason="Could not validate credentials")
+        return
+
+    # Connection concurrency limit (max 3 connections per user)
+    from app.core.redis import get_redis_client
+    redis_client = get_redis_client()
+    conn_key = f"ws_connections:{resolved_user_id}"
+    
+    try:
+        active_connections = await redis_client.incr(conn_key)
+        await redis_client.expire(conn_key, 86400) # 24 hours safety TTL
+    except Exception as e:
+        logger.error("Failed to increment connection count in Redis", extra={"error": str(e)})
+        # Fail open or fail closed? Let's assume fail open so we don't block users if Redis is down
+        active_connections = 1
+
+    if active_connections > 3:
+        try:
+            await redis_client.decr(conn_key)
+        except Exception:
+            pass
+        await websocket.close(code=1008, reason="Max connection limit reached (max 3)")
         return
 
     await websocket.accept()
-    logger.info("Real-time WebSocket connected", extra={"user_id": user_id})
+    logger.info("Real-time WebSocket connected", extra={"user_id": resolved_user_id})
 
     # Resolve Gemini config
     from app.core.config import get_settings
@@ -392,6 +514,10 @@ async def realtime_endpoint(
             "type": "error",
             "detail": "No Gemini API key configured. Set it in Settings.",
         }))
+        try:
+            await redis_client.decr(conn_key)
+        except Exception:
+            pass
         await websocket.close(code=1011)
         return
 
@@ -405,6 +531,14 @@ async def realtime_endpoint(
         websocket=websocket,
         gemini_api_key=resolved_key,
         gemini_model=resolved_model,
-        user_id=user_id,
+        user_id=resolved_user_id,
+        session_id=session_id,
     )
-    await session.run()
+    
+    try:
+        await session.run()
+    finally:
+        try:
+            await redis_client.decr(conn_key)
+        except Exception as e:
+            logger.error("Failed to decrement connection count in Redis", extra={"error": str(e)})
