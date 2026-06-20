@@ -1,6 +1,6 @@
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
-python-multipart>=0.0.9
+python-multipart==0.0.9
 pydantic==2.10.3
 pydantic-settings==2.6.1
 pydantic[email]==2.10.3
@@ -8,7 +8,7 @@ pydantic[email]==2.10.3
 # Database
 sqlalchemy==2.0.36
 asyncpg==0.30.0
-aiosqlite>=0.20.0
+aiosqlite==0.20.0
 alembic==1.14.0
 
 # Auth
@@ -21,7 +21,7 @@ google-genai==1.14.0
 faster-whisper==1.1.1
 sentence-transformers==3.3.1
 faiss-cpu==1.14.2
-numpy>=1.26.4
+numpy==1.26.4
 
 # PDF
 pymupdf==1.25.1
@@ -30,10 +30,10 @@ pymupdf==1.25.1
 slowapi==0.1.9
 
 # HTTP client (for testing)
-httpx>=0.28.1
+httpx==0.28.1
 
 # Supabase Storage
-supabase>=2.30.0
+supabase==2.31.0
 
 # Production Hardening
 pgvector==0.3.2
