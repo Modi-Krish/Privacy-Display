@@ -58,7 +58,7 @@ jobs:
       - name: Run pip-audit and safety scans
         run: |
           pip-audit
-          safety check || true
+          safety check
 
       - name: Run Ruff Lint
         run: |

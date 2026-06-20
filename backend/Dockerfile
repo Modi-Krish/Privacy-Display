@@ -20,7 +20,9 @@ RUN groupadd -g 10001 reai && \
 
 # Install Python requirements
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip --no-cache-dir && \
+    pip install --no-cache-dir -r requirements.txt && \
+    rm -rf /root/.cache/pip
 
 # Copy application code
 COPY . .
