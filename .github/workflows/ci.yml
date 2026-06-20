@@ -31,7 +31,7 @@ jobs:
       DATABASE_URL: "sqlite+aiosqlite:///:memory:"
       SECRET_KEY: test-secret-key-for-ci-runs-only
       GEMINI_API_KEY: fake-key-for-ci-testing-12345
-      ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2ktcnVucy1vbmx5=
+      ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2ktcnVucy1vbmx5=  # gitleaks:allow
 
     steps:
       - name: Checkout repository
