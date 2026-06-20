@@ -30,10 +30,10 @@ pymupdf==1.25.1
 slowapi==0.1.9
 
 # HTTP client (for testing)
-httpx==0.28.1
+httpx>=0.28.1
 
 # Supabase Storage
-supabase==2.4.3
+supabase>=2.30.0
 
 # Production Hardening
 pgvector==0.3.2
